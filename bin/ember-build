@@ -1,0 +1,3 @@
+#!/bin/bash
+
+fsmonitor -p -d app/assets/javascripts/edu_apps '!index.js' '!templates.js' '!application.js' ember build

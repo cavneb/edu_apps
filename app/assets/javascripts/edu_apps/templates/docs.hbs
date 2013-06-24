@@ -1,0 +1,16 @@
+<div class="sub-nav-wrapper">
+  <div class="text-center">
+    <ul class="nav nav-pills sub-nav">
+      {{#view App.NavView}}{{#linkTo 'docs.basics'}}Basics<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'docs.extensions'}}Extensions<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'docs.xml'}}XML<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'docs.api'}}API<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+    </ul>
+  </div>
+</div>
+
+<div class="bg-light-grey">
+  <div class="container">
+    {{outlet}}
+  </div>
+</div>

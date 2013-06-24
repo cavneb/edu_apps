@@ -1,0 +1,6 @@
+{
+  "name": "edu_apps",
+  "dependencies": {
+    "ember-tools": "git+https://git@github.com/jergason/ember-tools.git"
+  }
+}

@@ -1,0 +1,24 @@
+<div id="header">
+  <header>
+    <div class="container">
+      <div class="navbar">
+        <div class="navbar-inner">
+          {{#linkTo "index" class="brand"}}Edu Apps{{/linkTo}}
+
+          <ul class="nav nav-pills pull-right">
+            {{#view App.NavView}}<a href="#">Apps</a>{{/view}}
+            {{#view App.NavView}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/view}}
+            {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
+            {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
+            {{#view App.NavView}}{{#linkTo "session.login"}}<i class="icon-user"></i> <span>Sign In</span>{{/linkTo}}{{/view}}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<div id="content">
+  {{outlet}}
+</div>
+

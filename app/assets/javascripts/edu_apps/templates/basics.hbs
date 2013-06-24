@@ -1,0 +1,16 @@
+<div class="sub-nav-wrapper">
+  <div class="text-center">
+    <ul class="nav nav-pills sub-nav">
+      {{#view App.NavView}}{{#linkTo 'basics.introduction'}}Introduction<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'basics.post_parameters'}}POST Parameters<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'basics.building_an_lti_app'}}Building an LTI App<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+      {{#view App.NavView}}{{#linkTo 'basics.other_resources'}}Other Resources<div class="arrow-down"></div>{{/linkTo}}{{/view}}
+    </ul>
+  </div>
+</div>
+
+<div class="bg-light-grey">
+  <div class="container">
+    {{outlet}}
+  </div>
+</div>
