@@ -4,12 +4,17 @@ module Api
     protected
 
     def restrict_access
-      puts "Checked to see if access is restricted"
+      # puts "Checked to see if access is restricted"
       head :unauthorized unless current_user
     end
 
     def current_user
-      User.find_by_access_token(params[:access_token])
+      user = User.find_by_access_token(params[:access_token])
+      if session[:user_id] && user && session[:user_id] == user.id
+        return user
+      else
+        return nil
+      end
     end
   end
 end

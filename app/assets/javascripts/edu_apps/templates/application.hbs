@@ -1,3 +1,5 @@
+{{ render "flash" }}
+
 <div id="header">
   <header>
     <div class="container">
@@ -10,7 +12,12 @@
             {{#view App.NavView}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/view}}
             {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
             {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
-            {{#view App.NavView}}{{#linkTo "session.login"}}<i class="icon-user"></i> <span>Sign In</span>{{/linkTo}}{{/view}}
+            {{#if userLoggedIn}}
+              {{#view App.NavView}}{{#linkTo "profile"}}{{email}}{{/linkTo}}{{/view}}
+              <li><a href="#" {{action "logout" on="click"}}>Logout</a></li>
+            {{else}}
+              {{#view App.NavView}}{{#linkTo "session.login"}}Login{{/linkTo}}{{/view}}
+            {{/if}}
           </ul>
         </div>
       </div>

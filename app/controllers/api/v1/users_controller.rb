@@ -1,10 +1,19 @@
 module Api
   module V1
     class UsersController < Api::BaseController
-      # before_filter :restrict_access, only: :index
+      before_filter :restrict_access, only: :index
 
       def index
         render json: User.all
+      end
+
+      def show
+        user = User.where(access_token: params[:id]).first
+        if user
+          render json: user
+        else
+          render json: { message: "User not found" }, status: :unprocessable_entity
+        end
       end
 
       def create

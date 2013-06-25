@@ -1,11 +1,10 @@
 (function(){var global = this;function debug(){return debug};function require(p, parent){ var path = require.resolve(p) , mod = require.modules[path]; if (!mod) throw new Error('failed to require "' + p + '" from ' + parent); if (!mod.exports) { mod.exports = {}; mod.call(mod.exports, mod, mod.exports, require.relative(path), global); } return mod.exports;}require.modules = {};require.resolve = function(path){ var orig = path , reg = path + '.js' , index = path + '/index.js'; return require.modules[reg] && reg || require.modules[index] && index || orig;};require.register = function(path, fn){ require.modules[path] = fn;};require.relative = function(parent) { return function(p){ if ('debug' == p) return debug; if ('.' != p.charAt(0)) return require(p); var path = parent.split('/') , segs = p.split('/'); path.pop(); for (var i = 0; i < segs.length; i++) { var seg = segs[i]; if ('..' == seg) path.pop(); else if ('.' != seg) path.push(seg); } return require(path.join('/'), parent); };};require.register("application.js", function(module, exports, require, global){
 
 });require.register("config/app.js", function(module, exports, require, global){
-
 require('../vendor/jquery');
 require('../vendor/handlebars');
 require('../vendor/ember');
-require('../vendor/ember-data'); // delete if you don't want ember-data
+require('../vendor/ember-data');
 
 var App = Ember.Application.create({ LOG_TRANSITIONS: true });
 App.Store = require('./store'); // delete if you don't want ember-data
@@ -54,13 +53,101 @@ App.Router.map(function() {
       this.route('retrieving_a_review');
     });
   });
+  this.route('profile');
 });
 
 });require.register("config/store.js", function(module, exports, require, global){
+DS.RESTAdapter.reopen({
+  namespace: 'api/v1'
+});
+
 module.exports = DS.Store.extend({
   revision: 11,
   adapter: DS.RESTAdapter.create()
 });
+
+});require.register("controllers/application_controller.js", function(module, exports, require, global){
+var ApplicationController = Ember.ObjectController.extend({
+
+  userLoggedIn: function() {
+    if (this.get('model.email') && this.get('model.email').length > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }.property('model.email')
+
+});
+
+module.exports = ApplicationController;
+
+
+});require.register("controllers/flash_controller.js", function(module, exports, require, global){
+var FlashController = Ember.ObjectController.extend({
+  content: null,
+
+  hide: function() {
+    console.log("hiding...");
+    $('#flash-view').css({
+      top: "85px"
+    }).animate({
+      opacity: "toggle",
+      top: "-=135px"
+    }, 500);
+  },
+
+  show: function(content, view) {
+    if (this.get('content')) {
+      $('#flash-view').css({
+        top: "-50px"
+      }).animate({
+        opacity: "toggle",
+        top: "+=135px"
+      }, 500);
+      setTimeout(this.hide, 4000);
+    }
+  }.observes('content')
+
+});
+
+module.exports = FlashController;
+
+
+});require.register("controllers/session/login_controller.js", function(module, exports, require, global){
+var SessionLoginController = Ember.Controller.extend({
+
+  clearToken: function() {
+    localStorage.removeItem('token');
+    this.set('token', null);
+  },
+
+  reset: function() {
+    this.setProperties({ email: '', password: '' });
+  },
+
+  token: localStorage.token,
+  
+  tokenChanged: function() {
+    localStorage.token = this.get('token');
+  }.observes('token'),
+
+  login: function() {
+    var self = this;
+    var data = this.getProperties('email', 'password');
+    $.post('/api/v1/sessions', data, function(resp) {
+      if (resp.user) {
+        self.set('token', resp.user.access_token);
+        self.get('target').send('loginUser', resp.user);
+        self.get('target').transitionTo('apps');
+      }
+      else {
+        self.get('target').send('showFlash', 'error', 'Invalid username and/or password');
+      }
+    });
+  }
+});
+
+module.exports = SessionLoginController;
 
 
 });require.register("index.js", function(module, exports, require, global){
@@ -71,14 +158,74 @@ var App = require('./config/app');
 require('./templates');
 
 
+App.ApplicationController = require('./controllers/application_controller');
+App.FlashController = require('./controllers/flash_controller');
+App.SessionLoginController = require('./controllers/session/login_controller');
+App.User = require('./models/user');
+App.ApplicationRoute = require('./routes/application_route');
 App.DocsRoute = require('./routes/docs_route');
 App.IndexRoute = require('./routes/index_route');
 App.TutorialsRoute = require('./routes/tutorials_route');
+App.SessionLoginRoute = require('./routes/session/login_route');
 App.NavView = require('./views/nav_view');
 
 require('./config/routes');
 
 module.exports = App;
+
+
+});require.register("models/user.js", function(module, exports, require, global){
+var User = DS.Model.extend({
+  email: DS.attr('string'),
+  access_token: DS.attr('string')
+});
+
+module.exports = User;
+
+
+});require.register("routes/application_route.js", function(module, exports, require, global){
+var ApplicationRoute = Ember.Route.extend({
+  model: function() {
+    var token = this.controllerFor('session.login').get('token');
+    if (token == undefined || token === 'null') {
+      return null;
+    } else {
+      return App.User.find(token);
+    }
+  },
+
+  setupController: function(controller, currentUser) {
+    controller.set('model', currentUser);
+  },
+
+  events: {
+    showFlash: function(type, message) {
+      this.controllerFor('flash').set('model', { type: type, message: message });
+    },
+
+    loginUser: function(user) {
+      this.controller.set('model', user);
+      this.controllerFor('flash').set('model', { type: 'notice', message: 'You are now logged in!' });
+    },
+
+    logout: function() {
+      var self = this;
+      var token = this.controllerFor('session.login').get('token');
+      $.ajax({
+        type: 'DELETE',
+        url: '/api/v1/sessions',
+        data: { access_token: token }
+      }).done(function( msg ) {
+        console.log(msg);
+      });
+      self.controller.set('model', null);
+      this.controllerFor('session.login').clearToken();
+      this.controllerFor('flash').set('model', { type: 'notice', message: 'You have logged out successfully!' });
+    }
+  }
+});
+
+module.exports = ApplicationRoute;
 
 
 });require.register("routes/docs_route.js", function(module, exports, require, global){
@@ -99,6 +246,16 @@ var IndexRoute = Ember.Route.extend({
 });
 
 module.exports = IndexRoute;
+
+
+});require.register("routes/session/login_route.js", function(module, exports, require, global){
+var SessionLoginRoute = Ember.Route.extend({
+  setupController: function(controller, context) {
+    controller.reset();
+  }
+});
+
+module.exports = SessionLoginRoute;
 
 
 });require.register("routes/tutorials_route.js", function(module, exports, require, global){
@@ -256,7 +413,7 @@ function program17(depth0,data) {
 Ember.TEMPLATES['application'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  var buffer = '', stack1, stack2, hashContexts, hashTypes, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
 
 function program1(depth0,data) {
   
@@ -320,21 +477,71 @@ function program12(depth0,data) {
 
 function program14(depth0,data) {
   
+  var buffer = '', stack1, hashTypes, hashContexts;
+  data.buffer.push("\n              ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(15, program15, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n              <li><a href=\"#\" ");
+  hashContexts = {'on': depth0};
+  hashTypes = {'on': "STRING"};
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "logout", {hash:{
+    'on': ("click")
+  },contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">Logout</a></li>\n            ");
+  return buffer;
+  }
+function program15(depth0,data) {
+  
   var stack1, stack2, hashTypes, hashContexts, options;
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},inverse:self.noop,fn:self.program(15, program15, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(16, program16, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "profile", options) : helperMissing.call(depth0, "linkTo", "profile", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program16(depth0,data) {
+  
+  var hashTypes, hashContexts;
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "email", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  }
+
+function program18(depth0,data) {
+  
+  var buffer = '', stack1, hashTypes, hashContexts;
+  data.buffer.push("\n              ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(19, program19, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n            ");
+  return buffer;
+  }
+function program19(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(20, program20, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "session.login", options) : helperMissing.call(depth0, "linkTo", "session.login", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
-function program15(depth0,data) {
+function program20(depth0,data) {
   
   
-  data.buffer.push("<i class=\"icon-user\"></i> <span>Sign In</span>");
+  data.buffer.push("Login");
   }
 
-  data.buffer.push("<div id=\"header\">\n  <header>\n    <div class=\"container\">\n      <div class=\"navbar\">\n        <div class=\"navbar-inner\">\n          ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.render),stack1 ? stack1.call(depth0, "flash", options) : helperMissing.call(depth0, "render", "flash", options))));
+  data.buffer.push("\n\n<div id=\"header\">\n  <header>\n    <div class=\"container\">\n      <div class=\"navbar\">\n        <div class=\"navbar-inner\">\n          ");
   hashContexts = {'class': depth0};
   hashTypes = {'class': "STRING"};
   options = {hash:{
@@ -365,7 +572,7 @@ function program15(depth0,data) {
   data.buffer.push("\n            ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(14, program14, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers['if'].call(depth0, "userLoggedIn", {hash:{},inverse:self.program(18, program18, data),fn:self.program(14, program14, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n          </ul>\n        </div>\n      </div>\n    </div>\n  </header>\n</div>\n\n<div id=\"content\">\n  ");
   hashTypes = {};
@@ -382,7 +589,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h2>apps</h2>\n\n");
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <h2>Apps</h2>\n  </div>\n</div>");
   
 });
 
@@ -722,13 +929,68 @@ function program20(depth0,data) {
   
 });
 
-Ember.TEMPLATES['index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['flash'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', hashContexts, hashTypes, escapeExpression=this.escapeExpression;
+
+
+  data.buffer.push("<div id=\"flash-view\" ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "ID"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': ("model.type")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" style=\"display: none;\">\n  <div id=\"message\">\n    ");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "model.message", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("\n  </div>\n</div>");
+  return buffer;
   
+});
+
+Ember.TEMPLATES['profile'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, hashContexts, hashTypes, options, escapeExpression=this.escapeExpression, helperMissing=helpers.helperMissing;
 
 
-  data.buffer.push("<h2>Index</h2>\n\n");
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">User Profile</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>\n          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Saepe, eveniet, iusto, dolore, iste ratione quaerat non ex quo laudantium provident necessitatibus repudiandae eligendi veritatis nulla fuga tempore excepturi. Consequuntur, nobis.\n        </p>\n      </div>\n      <div class=\"span4\">\n        <form ");
+  hashContexts = {'on': depth0};
+  hashTypes = {'on': "STRING"};
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "save", {hash:{
+    'on': ("submit")
+  },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("email"),
+    'value': ("email"),
+    'placeholder': ("Email Address")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("text"),
+    'value': ("name"),
+    'placeholder': ("Full Name")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("text"),
+    'value': ("organization"),
+    'placeholder': ("Company/Organization")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button class=\"btn btn-primary\" type=\"submit\">Save Changes</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  return buffer;
   
 });
 
@@ -904,20 +1166,101 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
 Ember.TEMPLATES['session/login'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+
+function program1(depth0,data) {
   
+  
+  data.buffer.push("register here");
+  }
 
-
-  data.buffer.push("<h2>session/login</h2>\n\n");
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">Login</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>Do not have an account?<br>Then you can ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "session.register", options) : helperMissing.call(depth0, "linkTo", "session.register", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</p>\n      </div>\n      <div class=\"span4\">\n        <form ");
+  hashContexts = {'on': depth0};
+  hashTypes = {'on': "STRING"};
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "login", {hash:{
+    'on': ("submit")
+  },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("email"),
+    'value': ("email"),
+    'placeholder': ("Email Address")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("password"),
+    'placeholder': ("Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <label class=\"checkbox pull-right\">\n                <input type=\"checkbox\"> Remember me\n              </label>\n              <button class=\"btn btn-primary\" type=\"submit\">Login</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  return buffer;
   
 });
 
 Ember.TEMPLATES['session/register'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+
+function program1(depth0,data) {
   
+  
+  data.buffer.push("login here");
+  }
 
-
-  data.buffer.push("<h2>session/register</h2>\n\n");
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">Register</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>Do you already have an account?<br>Then you can ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "session.login", options) : helperMissing.call(depth0, "linkTo", "session.login", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</p>\n      </div>\n      <div class=\"span4\">\n        <form ");
+  hashContexts = {'on': depth0};
+  hashTypes = {'on': "STRING"};
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "login", {hash:{
+    'on': ("submit")
+  },contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("email"),
+    'value': ("email"),
+    'placeholder': ("Email Address")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("password"),
+    'placeholder': ("Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("password_confirmation"),
+    'placeholder': ("Confirm Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <label class=\"checkbox pull-right\">\n                <input type=\"checkbox\"> Remember me\n              </label>\n              <button class=\"btn btn-primary\" type=\"submit\">Login</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  return buffer;
   
 });
 

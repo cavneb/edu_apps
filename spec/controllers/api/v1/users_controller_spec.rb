@@ -2,6 +2,7 @@ require 'spec_helper'
 
 describe Api::V1::UsersController do
   before(:each) do
+    session[:user_id] = nil
     @user = User.create!(email: 'foo@example.com', password: 'secret', password_confirmation: 'secret')
   end
 
@@ -17,10 +18,19 @@ describe Api::V1::UsersController do
     end
 
     it "with valid access token" do
+      session[:user_id] = @user.id
       get 'index', { 'access_token' => @user.access_token }
       json = JSON.parse(response.body)
       json['users'].size.should == 1
     end
+  end
+
+  it "#create" do
+    post 'create', { user: { email: 'foo2@example.com', password: 'secret', password_confirmation: 'secret' }}
+    json = JSON.parse(response.body)
+    json['user']['email'].should == 'foo2@example.com'
+    json['user']['access_token'].should be_present
+    json['user']['id'].should be_present
   end
 
   it "#update" do

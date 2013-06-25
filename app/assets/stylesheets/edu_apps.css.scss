@@ -84,3 +84,55 @@ footer#footer {
   border-top: 1px solid darken($bg-grey, 10%);
   border-bottom: 1px solid darken($bg-grey, 10%);
 }
+
+// Forms
+
+.session-form {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    box-shadow: none;
+    -webkit-box-shadow: none;
+    border: none;
+    margin: 0 0 15px -5px;
+    font-weight: 400;
+    font-size: 16px !important;
+    padding: 8px;
+  }
+
+  button {
+    box-shadow: none;
+    -webkit-box-shadow: none;
+    border: none;
+    margin: 0 0 15px -5px;
+    font-weight: 300;
+    font-size: 16px !important;
+    padding: 8px 20px;
+  }
+}
+
+
+#flash-view {
+  position: fixed;
+  top: 87px;
+  width: 100%;
+  z-index: 20;
+  overflow: hidden;
+}
+#flash-view #message {
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.2em;
+  text-align: center;
+  padding: 20px 0;
+}
+#flash-view.notice #message {
+  background-color: #6c3;
+}
+#flash-view.alert #message {
+  background-color: #f14247;
+}
+#flash-view.error #message {
+  background-color: #f14247;
+}

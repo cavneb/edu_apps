@@ -38,4 +38,5 @@ App.Router.map(function() {
       this.route('retrieving_a_review');
     });
   });
+  this.route('profile');
 });

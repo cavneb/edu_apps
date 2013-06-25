@@ -2,30 +2,29 @@
   <div class="container">
     <div class="row-fluid">
       <div class="span4 offset2">
-        <h2 class="page-header">Register</h2>
+        <h2 class="page-header">User Profile</h2>
       </div>
     </div>
     <div class="row-fluid">
       <div class="span4 offset2">
-        <p>Do you already have an account?<br>Then you can {{#linkTo 'session.login'}}login here{{/linkTo}}</p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Saepe, eveniet, iusto, dolore, iste ratione quaerat non ex quo laudantium provident necessitatibus repudiandae eligendi veritatis nulla fuga tempore excepturi. Consequuntur, nobis.
+        </p>
       </div>
       <div class="span4">
-        <form {{action "login" on="submit"}} class="session-form">
+        <form {{action save on="submit"}} class="session-form">
           <div class="controls">
             {{input type="email" value=email placeholder="Email Address"}}
           </div>
           <div class="controls">
-            {{input type="password" value=password placeholder="Password"}}
+            {{input type="text" value=name placeholder="Full Name"}}
           </div>
           <div class="controls">
-            {{input type="password" value=password_confirmation placeholder="Confirm Password"}}
+            {{input type="text" value=organization placeholder="Company/Organization"}}
           </div>
           <div class="control-group">
             <div class="controls">
-              <label class="checkbox pull-right">
-                <input type="checkbox"> Remember me
-              </label>
-              <button class="btn btn-primary" type="submit">Login</button>
+              <button class="btn btn-primary" type="submit">Save Changes</button>
             </div>
           </div>
         </form>
