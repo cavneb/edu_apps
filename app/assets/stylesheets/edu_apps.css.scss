@@ -34,9 +34,15 @@ $bg-grey: #eee;
   padding-top: 86px;
   section {
     h2,h3,h4 {
-      margin-top: 25px;
+      margin-top: 0px;
     }
   }
+}
+
+footer#footer {
+  text-align: center;
+  padding-top: 5px;
+  font-size: 300;
 }
 
 .sub-nav-wrapper {

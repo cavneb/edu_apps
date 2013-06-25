@@ -17,6 +17,7 @@ module.exports = App;
 var App = require('./app');
 
 App.Router.map(function() {
+  this.route('apps');
   this.resource('tutorials', function() {
     this.route('canvas');
     this.route('moodle');
@@ -29,10 +30,29 @@ App.Router.map(function() {
     this.route('register');
   });
   this.resource('docs', function() {
-    this.route('basics');
-    this.route('extensions');
-    this.route('xml');
-    this.route('api');
+    this.resource('basics', function() {
+      this.route('index');
+      this.route('building_an_lti_app');
+      this.route('post_parameters');
+      this.route('other_resources');
+    });
+    this.resource('extensions', function() {
+      this.route('index');
+      this.route('content');
+      this.route('result_data');
+      this.route('canvas_navigation');
+      this.route('canvas_wysiwyg');
+      this.route('canvas_link_selection');
+      this.route('canvas_homework');
+    });
+    this.resource('api', function() {
+      this.route('index');
+      this.route('app_details');
+      this.route('app_reviews');
+      this.route('apps_list');
+      this.route('contributing_reviews');
+      this.route('retrieving_a_review');
+    });
   });
 });
 
@@ -53,6 +73,7 @@ require('./templates');
 
 App.DocsRoute = require('./routes/docs_route');
 App.IndexRoute = require('./routes/index_route');
+App.TutorialsRoute = require('./routes/tutorials_route');
 App.NavView = require('./views/nav_view');
 
 require('./config/routes');
@@ -63,7 +84,7 @@ module.exports = App;
 });require.register("routes/docs_route.js", function(module, exports, require, global){
 var DocsRoute = Ember.Route.extend({
   redirect: function() {
-    this.transitionTo('docs.basics')
+    this.transitionTo('basics.index');
   }
 });
 
@@ -72,10 +93,22 @@ module.exports = DocsRoute;
 
 });require.register("routes/index_route.js", function(module, exports, require, global){
 var IndexRoute = Ember.Route.extend({
-
+  redirect: function() {
+    this.transitionTo('apps');
+  }
 });
 
 module.exports = IndexRoute;
+
+
+});require.register("routes/tutorials_route.js", function(module, exports, require, global){
+var TutorialsRoute = Ember.Route.extend({
+  redirect: function() {
+    this.transitionTo('tutorials.canvas');
+  }
+});
+
+module.exports = TutorialsRoute;
 
 
 });require.register("templates.js", function(module, exports, require, global){
@@ -91,7 +124,7 @@ function program1(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "api.introduction", options) : helperMissing.call(depth0, "linkTo", "api.introduction", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "api.index", options) : helperMissing.call(depth0, "linkTo", "api.index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
@@ -181,41 +214,41 @@ function program17(depth0,data) {
   data.buffer.push("Retrieving_a Review<div class=\"arrow-down\"></div>");
   }
 
-  data.buffer.push("<div class=\"sub-nav-wrapper\">\n  <div class=\"text-center\">\n    <ul class=\"nav nav-pills sub-nav\">\n      ");
+  data.buffer.push("<div class=\"row\">\n  <div class=\"span3\">\n    <div data-spy=\"affix\" data-offset-top=\"0\">\n      <ul class=\"nav nav-list\">\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(4, program4, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(10, program10, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(13, program13, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(16, program16, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n    </ul>\n  </div>\n</div>\n\n<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    ");
+  data.buffer.push("\n      </ul>\n    </div>\n  </div>\n  <div class=\"span9\">\n    ");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("\n  </div>\n</div>");
+  data.buffer.push("\n  </div>\n</div>\n");
   return buffer;
   
 });
@@ -233,59 +266,69 @@ function program1(depth0,data) {
 
 function program3(depth0,data) {
   
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(4, program4, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "apps", options) : helperMissing.call(depth0, "linkTo", "apps", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program4(depth0,data) {
   
-  data.buffer.push("<a href=\"#\">Apps</a>");
+  
+  data.buffer.push("Apps");
   }
 
-function program5(depth0,data) {
+function program6(depth0,data) {
   
   var stack1, stack2, hashTypes, hashContexts, options;
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},inverse:self.noop,fn:self.program(6, program6, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "tutorials", options) : helperMissing.call(depth0, "linkTo", "tutorials", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
-function program6(depth0,data) {
+function program7(depth0,data) {
   
   
   data.buffer.push("Tutorials");
   }
 
-function program8(depth0,data) {
+function program9(depth0,data) {
   
   var stack1, stack2, hashTypes, hashContexts, options;
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},inverse:self.noop,fn:self.program(9, program9, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(10, program10, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "docs", options) : helperMissing.call(depth0, "linkTo", "docs", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
-function program9(depth0,data) {
+function program10(depth0,data) {
   
   
   data.buffer.push("Docs");
   }
 
-function program11(depth0,data) {
+function program12(depth0,data) {
   
   
   data.buffer.push("<a href=\"#\">Submit</a>");
   }
 
-function program13(depth0,data) {
+function program14(depth0,data) {
   
   var stack1, stack2, hashTypes, hashContexts, options;
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},inverse:self.noop,fn:self.program(14, program14, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(15, program15, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "session.login", options) : helperMissing.call(depth0, "linkTo", "session.login", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
-function program14(depth0,data) {
+function program15(depth0,data) {
   
   
   data.buffer.push("<i class=\"icon-user\"></i> <span>Sign In</span>");
@@ -307,29 +350,39 @@ function program14(depth0,data) {
   data.buffer.push("\n            ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(6, program6, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n            ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(8, program8, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(9, program9, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n            ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(11, program11, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(12, program12, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n            ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(13, program13, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(14, program14, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n          </ul>\n        </div>\n      </div>\n    </div>\n  </header>\n</div>\n\n<div id=\"content\">\n  ");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("\n</div>\n\n");
+  data.buffer.push("\n</div>\n\n<footer id=\"footer\">\n  <p class=\"muted\">\n    This site and its contents are <a href=\"https://github.com/cavneb/edu_apps\">available on GitHub</a> under the MIT license. Official IMS LTI docs are found on the <a href=\"http://www.imsglobal.org/lti/\">IMS page</a>.<br>\n    Also check out IMS's <a href=\"http://www.imsglobal.org/lti\">LTI Directory</a> and details on<a href=\"http://www.imscert.org\">LTI Conformance</a>.\n  </p>\n</footer>\n\n");
   return buffer;
+  
+});
+
+Ember.TEMPLATES['apps'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  
+
+
+  data.buffer.push("<h2>apps</h2>\n\n");
   
 });
 
@@ -344,14 +397,14 @@ function program1(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.introduction", options) : helperMissing.call(depth0, "linkTo", "basics.introduction", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.index", options) : helperMissing.call(depth0, "linkTo", "basics.index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
 function program2(depth0,data) {
   
   
-  data.buffer.push("Introduction<div class=\"arrow-down\"></div>");
+  data.buffer.push("Introduction");
   }
 
 function program4(depth0,data) {
@@ -360,14 +413,14 @@ function program4(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.post_parameters", options) : helperMissing.call(depth0, "linkTo", "basics.post_parameters", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.building_an_lti_app", options) : helperMissing.call(depth0, "linkTo", "basics.building_an_lti_app", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
 function program5(depth0,data) {
   
   
-  data.buffer.push("POST Parameters<div class=\"arrow-down\"></div>");
+  data.buffer.push("Building an LTI App");
   }
 
 function program7(depth0,data) {
@@ -376,14 +429,14 @@ function program7(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(8, program8, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.building_an_lti_app", options) : helperMissing.call(depth0, "linkTo", "basics.building_an_lti_app", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.post_parameters", options) : helperMissing.call(depth0, "linkTo", "basics.post_parameters", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
 function program8(depth0,data) {
   
   
-  data.buffer.push("Building an LTI App<div class=\"arrow-down\"></div>");
+  data.buffer.push("POST Parameters");
   }
 
 function program10(depth0,data) {
@@ -399,34 +452,34 @@ function program10(depth0,data) {
 function program11(depth0,data) {
   
   
-  data.buffer.push("Other Resources<div class=\"arrow-down\"></div>");
+  data.buffer.push("Other Resources");
   }
 
-  data.buffer.push("<div class=\"sub-nav-wrapper\">\n  <div class=\"text-center\">\n    <ul class=\"nav nav-pills sub-nav\">\n      ");
+  data.buffer.push("<div class=\"row\">\n  <div class=\"span3\">\n    <div data-spy=\"affix\" data-offset-top=\"0\">\n      <ul class=\"nav nav-list\">\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(4, program4, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
+  data.buffer.push("\n        ");
   hashTypes = {};
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(10, program10, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n    </ul>\n  </div>\n</div>\n\n<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    ");
+  data.buffer.push("\n      </ul>\n    </div>\n  </div>\n  <div class=\"span9\">\n    ");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("\n  </div>\n</div>");
+  data.buffer.push("\n  </div>\n</div>\n");
   return buffer;
   
 });
@@ -442,7 +495,7 @@ function program1(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "docs.basics", options) : helperMissing.call(depth0, "linkTo", "docs.basics", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.index", options) : helperMissing.call(depth0, "linkTo", "basics.index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
@@ -458,7 +511,7 @@ function program4(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "docs.extensions", options) : helperMissing.call(depth0, "linkTo", "docs.extensions", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.index", options) : helperMissing.call(depth0, "linkTo", "extensions.index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
@@ -474,27 +527,11 @@ function program7(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(8, program8, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "docs.xml", options) : helperMissing.call(depth0, "linkTo", "docs.xml", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "api.index", options) : helperMissing.call(depth0, "linkTo", "api.index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   else { data.buffer.push(''); }
   }
 function program8(depth0,data) {
-  
-  
-  data.buffer.push("XML<div class=\"arrow-down\"></div>");
-  }
-
-function program10(depth0,data) {
-  
-  var stack1, stack2, hashTypes, hashContexts, options;
-  hashTypes = {};
-  hashContexts = {};
-  options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "docs.api", options) : helperMissing.call(depth0, "linkTo", "docs.api", options));
-  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
-  else { data.buffer.push(''); }
-  }
-function program11(depth0,data) {
   
   
   data.buffer.push("API<div class=\"arrow-down\"></div>");
@@ -515,16 +552,172 @@ function program11(depth0,data) {
   hashContexts = {};
   stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  data.buffer.push("\n      ");
-  hashTypes = {};
-  hashContexts = {};
-  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(10, program10, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
-  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
   data.buffer.push("\n    </ul>\n  </div>\n</div>\n\n<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    ");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push("\n  </div>\n</div>");
+  return buffer;
+  
+});
+
+Ember.TEMPLATES['extensions'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, hashTypes, hashContexts, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+
+function program1(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.index", options) : helperMissing.call(depth0, "linkTo", "extensions.index", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program2(depth0,data) {
+  
+  
+  data.buffer.push("Introduction");
+  }
+
+function program4(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.content", options) : helperMissing.call(depth0, "linkTo", "extensions.content", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program5(depth0,data) {
+  
+  
+  data.buffer.push("Content");
+  }
+
+function program7(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(8, program8, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.result_data", options) : helperMissing.call(depth0, "linkTo", "extensions.result_data", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program8(depth0,data) {
+  
+  
+  data.buffer.push("Result Data");
+  }
+
+function program10(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_navigation", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_navigation", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program11(depth0,data) {
+  
+  
+  data.buffer.push("Navigation");
+  }
+
+function program13(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(14, program14, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_wysiwyg", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_wysiwyg", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program14(depth0,data) {
+  
+  
+  data.buffer.push("WYSIWYG");
+  }
+
+function program16(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(17, program17, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_link_selection", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_link_selection", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program17(depth0,data) {
+  
+  
+  data.buffer.push("Link Selection");
+  }
+
+function program19(depth0,data) {
+  
+  var stack1, stack2, hashTypes, hashContexts, options;
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(20, program20, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_homework", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_homework", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  else { data.buffer.push(''); }
+  }
+function program20(depth0,data) {
+  
+  
+  data.buffer.push("Homework Submission");
+  }
+
+  data.buffer.push("<div class=\"row\">\n  <div class=\"span3\">\n    <div data-spy=\"affix\" data-offset-top=\"0\">\n      <ul class=\"nav nav-list\">\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        <li class=\"nav-header\">Extensions</li>\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(4, program4, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        <li class=\"nav-header\">Canvas</li>\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(10, program10, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(13, program13, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(16, program16, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n        ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(19, program19, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n      </ul>\n    </div>\n  </div>\n  <div class=\"span9\">\n    ");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("\n  </div>\n</div>\n");
   return buffer;
   
 });
@@ -664,7 +857,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h3>Configuring Apps in Blackboard Learn</h3>\n\n<div class=\"flex-video\">\n  <iframe width=\"640\" height=\"480\" src=\"http://www.youtube.com/embed/Qh_X3J8VADE\" frameborder=\"0\" allowfullscreen></iframe>\n</div>\n\n<iframe src=\"http://library.blackboard.com/ref/df5b20ed-ce8d-4428-a595-a0091b23dda3/Content/_admin_app_system/admin_app_basic_lti_tool_providers.htm\" \n  class=\"span-12 columns\" height=\"2200\" frameborder=\"0\"></iframe>");
+  data.buffer.push("<section>\n  <h2>Configuring Apps in Blackboard Learn</h2>\n\n  <div class=\"flex-video\">\n    <iframe width=\"640\" height=\"480\" src=\"http://www.youtube.com/embed/Qh_X3J8VADE\" frameborder=\"0\" allowfullscreen></iframe>\n  </div>\n\n  <iframe src=\"http://library.blackboard.com/ref/df5b20ed-ce8d-4428-a595-a0091b23dda3/Content/_admin_app_system/admin_app_basic_lti_tool_providers.htm\" \n  class=\"span12\" height=\"2200\" frameborder=\"0\"></iframe>\n</section>");
   
 });
 
@@ -674,7 +867,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h3>Configuring Apps in Canvas</h3>\n\n<img src=\"/images/tool_config.png\" />\n\n<p>LTI app configuration in Canvas can happen on the course or account. Click the \"Settings\" link in the left sidebar of the course or account where you want to add the app. Click the \"External Tools\" tab and click \"Add External Tool\".</p>\n\n<p>Enter the name, consumer key and shared secret for the app (for these demo apps you can put any key and secret that you like). For \"configuration type\" select \"By URL\" and paste in the full URL of the link configuration (copy the URL from one of the links below).</p>\n\n<p>After the app is saved you should see it appear as configured in the course our account content. Depending on the integration type, the app may appear different places, but most apps will appear under \"External Tools\" when adding items to a module.</p>");
+  data.buffer.push("<section>\n  <h2>Configuring Apps in Canvas</h2>\n\n  <img src=\"/images/tool_config.png\" />\n\n  <p>LTI app configuration in Canvas can happen on the course or account. Click the \"Settings\" link in the left sidebar of the course or account where you want to add the app. Click the \"External Tools\" tab and click \"Add External Tool\".</p>\n\n  <p>Enter the name, consumer key and shared secret for the app (for these demo apps you can put any key and secret that you like). For \"configuration type\" select \"By URL\" and paste in the full URL of the link configuration (copy the URL from one of the links below).</p>\n\n  <p>After the app is saved you should see it appear as configured in the course our account content. Depending on the integration type, the app may appear different places, but most apps will appear under \"External Tools\" when adding items to a module.</p>\n</section>");
   
 });
 
@@ -684,7 +877,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h3>Configuring Apps in Desire2Learn</h3>\n\n<p>Desire2Learn added support for LTI apps in version 8.4. To get at their configuration docs you'll need to log in to <a href=\"https://community.desire2learn.com/enroll.asp\">the Desire2Learn community</a>, then click Documentation => 10.1 => Learning Environment => LTI.</p>");
+  data.buffer.push("<section>\n  <h2>Configuring Apps in Desire2Learn</h2>\n\n  <p>Desire2Learn added support for LTI apps in version 8.4. To get at their configuration docs you'll need to log in to <a href=\"https://community.desire2learn.com/enroll.asp\">the Desire2Learn community</a>, then click Documentation => 10.1 => Learning Environment => LTI.</p>\n</section>");
   
 });
 
@@ -694,7 +887,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h3>Configuring Apps in Moodle</h3>\n\n<p>Moodle added support for LTI apps in version 2.2. The following page explains how to set up external apps in Moodle.</p>\n\n<iframe src=\"http://docs.moodle.org/22/en/External_tool_settings\" \n        frameborder=\"0\" class=\"span-12 columns\" height=\"3000\" style=\"margin-bottom: 100px;\"></iframe>");
+  data.buffer.push("<section>\n  <h2>Configuring Apps in Moodle</h2>\n  <p>Moodle added support for LTI apps in version 2.2. The following page explains how to set up external apps in Moodle.</p>\n\n  <iframe src=\"http://docs.moodle.org/22/en/External_tool_settings\" frameborder=\"0\" class=\"span12\" height=\"3000\" style=\"margin-bottom: 100px;\"></iframe>\n</section>");
   
 });
 
@@ -704,7 +897,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h3>Configuring Apps in Sakai</h3>\n\n<p>Sakai is LTI compatible, and has been since version 2.5. <a href=\"http://www.edugarage.com/download/attachments/75071496/2010-06-15-blti.pdf\">This document</a> has some resources around LTI, including the following directions for trying out LTI in Sakai:</p>\n\n<ul style=\"margin-left: 25px;\">\n  <li><a href=\"http://nightly2.sakaiproject.org:8085/portal\">http://nightly2.sakaiproject.org:8085/portal</a></li>\n  <li>Make an account – Include full name and E-Mail</li>\n  <li>Make a site, Add Basic LTI, Configure the BLTI Tool</li>\n  <li>http://wiscrowd.appspot.com/wiscrowd</li>\n  <li>Key = 12345 / secret</li>\n</ul>");
+  data.buffer.push("<section>\n  <h2>Configuring Apps in Sakai</h2>\n\n  <p>Sakai is LTI compatible, and has been since version 2.5. <a href=\"http://www.edugarage.com/download/attachments/75071496/2010-06-15-blti.pdf\">This document</a> has some resources around LTI, including the following directions for trying out LTI in Sakai:</p>\n\n  <ul style=\"margin-left: 25px;\">\n    <li><a href=\"http://nightly2.sakaiproject.org:8085/portal\">http://nightly2.sakaiproject.org:8085/portal</a></li>\n    <li>Make an account – Include full name and E-Mail</li>\n    <li>Make a site, Add Basic LTI, Configure the BLTI Tool</li>\n    <li>http://wiscrowd.appspot.com/wiscrowd</li>\n    <li>Key = 12345 / secret</li>\n  </ul>\n</section>");
   
 });
 
@@ -728,98 +921,173 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 });
 
-Ember.TEMPLATES['docs/basics'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['extensions/canvas_homework'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  var buffer = '', stack1, hashTypes, hashContexts, options, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+  
 
 
-  data.buffer.push("<div class=\"row\">\n  <div class=\"span3\">\n    <div data-spy=\"affix\" data-offset-top=\"0\">\n      <ul class=\"nav nav-list\">\n        <li><a href=\"#introduction\">Introduction</a></li>\n        <li><a href=\"#post_parameters\">POST Parameters</a></li>\n        <li><a href=\"#building_an_lti_app\">Building an LTI App</a></li>\n        <li><a href=\"#other_resources\">Other Resources</a></li>\n      </ul>\n    </div>\n  </div>\n  <div class=\"span9\">\n    ");
+  data.buffer.push("<section>\n  <h2>Canvas Homework Submission</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to turn in homework through an LTI launch. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.homework_submission_tools.html\">more information</a>.\n  </p>\n</section>");
+  
+});
+
+Ember.TEMPLATES['extensions/canvas_link_selection'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  
+
+
+  data.buffer.push("<section>\n  <h2>Canvas Link Selection Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to select LTI launch URLs as module items. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.link_selection_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Links in Modules Demo</h3>\n        <p>\n            This app allows the user to pick and insert custom content as link\n            in course modules. When inserting content into a module, if the\n            user\n            picks \"External Tools\" they'll see the configured app with a\n            \"find\"\n            icon. Clicking the app will bring up a new dialog where the user\n            can pick/build content (in this case creating a page that shows an\n            image of a fish with a user-specified name for the fish)\n            to be inserted as a page or resource within\n            the current module.\n        </p>\n        <p>\n            Module linking apps can be configured at the course or account\n            level.\n            If the app is configured at the account level,\n            then it will be available for any courses within that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/link_selection_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/resource_selection_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
+  
+});
+
+Ember.TEMPLATES['extensions/canvas_navigation'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  
+
+
+  data.buffer.push("<section>\n  <h2>Canvas Navigation Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to have a link in the navigation for a course, account, or user.See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Course Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          course navigation. This link is available to anyone with access to\n          the course. If it's configured at the account level, the link will\n          be added to all courses within that account. Permissions can be set\n          to determine which user types have access to the app, and whether\n          the app is enabled by default for all applicable courses, or if\n          it needs to be configured manually for each course.\n      </p>\n      <a class=\"label label-info\" href=\"/config/course_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#course_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/course_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Account Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          account navigation. This link is available to anyone with access to\n          the account. The link will appear in the current account and any\n          sub-accounts of that account. Remember that app launches will send\n          all role types associated with a user, which in the case of\n          account-level links should always include at least the admin role,\n          <code>urn:lti:instrole:ims/lis/Administrator</code>.\n      </p>\n      <a class=\"label label-info\" href=\"/config/account_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>User Navigation Demo</h3>\n        <p>\n            This is an example of a standard configuration for adding a link\n            to\n            user navigation. This link is available to anyone with access to\n            the institution, and will appear as a navigation item whey they\n            click their profile or user information link.\n        </p>\n      <a class=\"label label-info\" href=\"/config/user_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#user_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/user_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n</section>");
+  
+});
+
+Ember.TEMPLATES['extensions/canvas_wysiwyg'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  
+
+
+  data.buffer.push("<section>\n  <h2>Canvas WYSIWYG Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to add content to a rich content editor. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.editor_button_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Editor button extensions show up in\n            Canvas\n            as icons in the right editor, in this case as a fish icon.\n            This simple demo app lets the user pick from a list of fish\n            pictures. The picture they choose will be inserted into the\n            rich editor.</p>\n        <p>\n            Editor button apps can be configured at the course or account\n            levels. If the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/editor_button_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Another Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Clicking the new kitten icon will pop up\n            a dialog\n            that uses placekitten.com to generate an image of a kitten set\n            to the user's specified dimensions.\n        </p>\n        <p>\n            Again, if the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button2.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/kitten_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
+  
+});
+
+Ember.TEMPLATES['extensions/content'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  
+
+
+  data.buffer.push("<section>\n  <h2>Content Extension</h2>\n  <p>This extension is used to pass content to the tool consumer from the tool provider.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    This is a light-weight LTI extension that allows a <span class=\"label label-info\">provider</span> to pass content to the <span class=\"label label-warning\">consumer</span>. When a <span lass=\"label label-warning\">consumer</span> launches with this extension it passes the <code>ext_content_return_types</code> key with a list of supported types for this launch. The <span lass=\"label label-info\">provider</span> will then attach the selected content to the <code>launch_presentation_return_url</code> and send the browser back to that url.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_content_return_types</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the content extension. The value should be a comma separated list of: <code>url</code>, <code>image_url</code>, <code>lti_launch_url</code>, <code>iframe</code>, <code>oembed</code>, <code>file</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_intended_use</td>\n        <td>no</td>\n        <td>\n          A hint to the <span class=\"label label-info\">provider</span> for how the content will be used. One of <code>navigation</code>, <code>homework</code>, <code>embed</code>, or a value agreed upon by <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_return_url</td>\n        <td>no</td>\n        <td>\n          The url that the <span class=\"label label-info\">provider</span> should redirect the user to with the selected content as query parameters. If not specified the <code>launch_presentation_return_url</code> should be used.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_file_extensions</td>\n        <td>no</td>\n        <td>A comma separated list of the file extensions that are allowed if there is a <code>file</code> return type.</td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    The <span class=\"label label-info\">provider</span> should present the user with a UI for selecting content. Once the user has selected the content the <span class=\"label label-info\"> provider</span> should redirect the user back to the <code>ext_content_return_url</code>, or if it wasn't sent, to <code>launch_presentation_return_url</code>.\n  </p>\n  <p>\n    The information for the selected content should be added to query parameters on the return url. The <code>return_type</code> key should specify the type, and the other key/value pairs should be sent as specified in their sections below.\n  </p>\n\n  <fieldset>\n    <legend>url</legend>\n    <p>\n      Return a url. If the intended use is <code>embed</code> the url will likely be used as an <code>href</code>. If the intended use is something else the extra link info may be discarded.\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>url</code></td></tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>The url. Likely used as the 'href' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value may be ignored</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>target</td>\n          <td>no</td>\n          <td>this is used as the 'target' attribute of the inserted link</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;</li>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>text</strong>=text%20for%20link</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>file</legend>\n    <p>Return a url to a file which the <span class=\"label label-warning\">consumer</span> will download.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>file</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is a URL to the file that can be retrieved without requiring any additional authentication (no sessions, cookies, etc.)</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>yes</td>\n          <td>the filename</td>\n        </tr>\n        <tr>\n          <td>content_type</td>\n          <td>no</td>\n          <td>content or MIME type of the file to be retrieved</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2file.pdf&amp;<strong>text</strong>=file.pdf</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>image_url</legend>\n    <p>Used to return a url to an image. It is generally implied the image will be placed with an img tag in the <span class=\"label label-warning\">consumer</span>.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>image_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is used as the 'alt' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded image tag</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage.gif&amp;<strong>alt</strong>=good+picture&amp;<strong>width</strong>=30&amp;<strong>height</strong>=50</li>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage2.gif&amp;<strong>alt</strong>=&amp;<strong>width</strong>=300&amp;<strong>height</strong>=500</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>iframe</legend>\n    <p>Return info to embed an iframe.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>iframe</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded iframe</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>title</strong>=great%20content</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>lti_launch_url</legend>\n    <p>Return an LTI launch url.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>lti_launch_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is URL that will be used to load the external tool. Any custom parameters should be in the query string.</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>the title of the resource link or the 'title' attribute of the inserted external tool link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value will be ignored.</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Flti_link%3Fkey%3Dval%26key2%3Dval2</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link&amp;<strong>title</strong>=hey%20there</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>oembed</legend>\n    <p>\n      For other types of rich content (such as a video tag, a large block of text, etc.) we also support the oEmbed standard. oEmbed works by giving Canvas an additional URL that can be queried to retrieve the block of content to be embedded. See <a href=\"http://oembed.com\">http://oembed.com</a> for more details about how oEmbed works\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>oembed</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is the oEmbed resource URL</td>\n        </tr>\n        <tr>\n          <td>endpoint</td>\n          <td>no</td>\n          <td>this is the oEmbed API endpoint URL</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=https%3A%2F%2Fothersite.com%2Foembed&amp;url=https%3A%2F%2Fothersite.com%2Fresources%2Fimage1</li>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=http%3A%2F%2Fwww.flickr.com%2Fservices%2Foembed%2F&amp;url=http%3A%2F%2Fwww.flickr.com%2Fphotos%2Fbees%2F2341623661%2F</li>\n    </ul>\n  </fieldset>\n</section>\n");
+  
+});
+
+Ember.TEMPLATES['extensions/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing;
+
+function program1(depth0,data) {
+  
+  
+  data.buffer.push("Content");
+  }
+
+function program3(depth0,data) {
+  
+  
+  data.buffer.push("Result Data");
+  }
+
+function program5(depth0,data) {
+  
+  
+  data.buffer.push("Navigation");
+  }
+
+function program7(depth0,data) {
+  
+  
+  data.buffer.push("WYSIWYG");
+  }
+
+function program9(depth0,data) {
+  
+  
+  data.buffer.push("content extension");
+  }
+
+function program11(depth0,data) {
+  
+  
+  data.buffer.push("Link Selection");
+  }
+
+function program13(depth0,data) {
+  
+  
+  data.buffer.push("Homework");
+  }
+
+  data.buffer.push("<section>\n  <h2>Introduction</h2>\n  \n  <p>LTI provides a great base for creating a connection between learning tools. These extensions are used to add functionality on top of that connection. These are unofficial and not all consumers and providers will support them.</p>\n\n  <hr>\n\n  <h3>Extensions</h3>\n\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n    <tr>\n      <th>Name</th>\n      <th>Description</th>\n    </tr>\n    </thead>\n    <tbody>\n    <tr>\n      <td>");
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  data.buffer.push(escapeExpression(((stack1 = helpers.partial),stack1 ? stack1.call(depth0, "docs/basics/introduction", options) : helperMissing.call(depth0, "partial", "docs/basics/introduction", options))));
-  data.buffer.push("\n    <hr>\n    ");
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.content", options) : helperMissing.call(depth0, "linkTo", "extensions.content", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n      <td>This extension is used to pass content to the tool consumer from the tool provider.\n      </td>\n    </tr>\n    <tr>\n      <td>");
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  data.buffer.push(escapeExpression(((stack1 = helpers.partial),stack1 ? stack1.call(depth0, "docs/basics/building_an_lti_app", options) : helperMissing.call(depth0, "partial", "docs/basics/building_an_lti_app", options))));
-  data.buffer.push("\n    <hr>\n    ");
+  options = {hash:{},inverse:self.noop,fn:self.program(3, program3, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.result_data", options) : helperMissing.call(depth0, "linkTo", "extensions.result_data", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n      <td>Add resultData in addition to resultScore in outcome services.</td>\n    </tr>\n    </tbody>\n  </table>\n\n  <hr>\n\n  <h3>Vendor-Specific Configurations</h3>\n\n  <p>These aren't LTI extensions, but applications of the extensions in some tools/platforms. These pages show examples and have info for setting up tools with these extensions.</p>\n\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Vendor</th>\n        <th>Name</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>Canvas</td>\n        <td>");
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  data.buffer.push(escapeExpression(((stack1 = helpers.partial),stack1 ? stack1.call(depth0, "docs/basics/post_parameters", options) : helperMissing.call(depth0, "partial", "docs/basics/post_parameters", options))));
-  data.buffer.push("\n    <hr>\n    ");
+  options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_navigation", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_navigation", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n        <td>Add LTI links as navigation items in courses/accounts/user areas</td>\n      </tr>\n      <tr>\n        <td>Canvas</td>\n        <td>");
   hashTypes = {};
   hashContexts = {};
-  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  data.buffer.push(escapeExpression(((stack1 = helpers.partial),stack1 ? stack1.call(depth0, "docs/basics/other_resources", options) : helperMissing.call(depth0, "partial", "docs/basics/other_resources", options))));
-  data.buffer.push("\n  </div>\n</div>\n");
+  options = {hash:{},inverse:self.noop,fn:self.program(7, program7, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_wysiwyg", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_wysiwyg", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n        <td>Add content to WYSIWYG editor using the ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(9, program9, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.content", options) : helperMissing.call(depth0, "linkTo", "extensions.content", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n      </tr>\n      <tr>\n        <td>Canvas</td>\n        <td>");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_link_selection", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_link_selection", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n        <td>Add LTI launch urls to modules using the ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(9, program9, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.content", options) : helperMissing.call(depth0, "linkTo", "extensions.content", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n      </tr>\n      <tr>\n        <td>Canvas</td>\n        <td>");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(13, program13, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.canvas_homework", options) : helperMissing.call(depth0, "linkTo", "extensions.canvas_homework", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n        <td>Turn in homework assignments using the ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(9, program9, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "extensions.content", options) : helperMissing.call(depth0, "linkTo", "extensions.content", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</td>\n      </tr>\n    </tbody>\n  </table>\n</section>");
   return buffer;
   
 });
 
-Ember.TEMPLATES['docs/extensions'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['extensions/result_data'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<h2>docs/extensions</h2>\n\n");
+  data.buffer.push("<section>\n  <h2>Result Data Extension</h2>\n  <p>This extension is used to pass data in addition to a grade when using the outcome service.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    If this extension is supported the <span class=\"label label-warning\">consumer</span> sends a list of accepted data values and the <span class=\"label label-info\">provider</span> adds a <code>resultData</code> node to the result XML sent to the <span class=\"label label-warning\">consumer</span>.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_outcome_data_values_accepted</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the resultData extension. The value should be a comma separated list of: <code>url</code>, <code>text</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    If the <span class=\"label label-info\">provider</span> wants to supply these values, it can augment the POX sent with the grading value. <a href=\"http://www.imsglobal.org/LTI/v1p1/ltiIMGv1p1.html#_Toc319560473\">LTI replaceResult POX</a>\n  </p>\n  <p>\n    Only one type of resultData should be sent, if multiple types are sent the tool consumer behavior is undefined and is implementation-specific.\n  </p>\n\n  <fieldset>\n    <legend>Text</legend>\n    <p>\n      Add a <code>resultData</code> node with a <code>text</code> node of plain text in the same encoding as the rest of the document within it like this:\n    </p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n&lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n  &lt;imsx_POXHeader&gt;\n    &lt;imsx_POXRequestHeaderInfo&gt;\n      &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n      &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n    &lt;/imsx_POXRequestHeaderInfo&gt;\n  &lt;/imsx_POXHeader&gt;\n  &lt;imsx_POXBody&gt;\n    &lt;replaceResultRequest&gt;\n      &lt;resultRecord&gt;\n        &lt;sourcedGUID&gt;\n          &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n        &lt;/sourcedGUID&gt;\n        &lt;result&gt;\n          &lt;resultScore&gt;\n            &lt;language&gt;en&lt;/language&gt;\n            &lt;textString&gt;0.92&lt;/textString&gt;\n          &lt;/resultScore&gt;\n          &lt;!--      Added element      --&gt;\n          &lt;resultData&gt;\n            &lt;text&gt;text data for canvas submission&lt;/text&gt;\n          &lt;/resultData&gt;\n        &lt;/result&gt;\n      &lt;/resultRecord&gt;\n    &lt;/replaceResultRequest&gt;\n  &lt;/imsx_POXBody&gt;\n&lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n  </fieldset>\n\n  <fieldset>\n    <legend>URL</legend>\n    <p>Add a <code>resultData</code> node with a <code>url</code> node within it like this:</p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n  &lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n    &lt;imsx_POXHeader&gt;\n      &lt;imsx_POXRequestHeaderInfo&gt;\n        &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n        &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n      &lt;/imsx_POXRequestHeaderInfo&gt;\n    &lt;/imsx_POXHeader&gt;\n    &lt;imsx_POXBody&gt;\n      &lt;replaceResultRequest&gt;\n        &lt;resultRecord&gt;\n          &lt;sourcedGUID&gt;\n            &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n          &lt;/sourcedGUID&gt;\n          &lt;result&gt;\n            &lt;resultScore&gt;\n              &lt;language&gt;en&lt;/language&gt;\n              &lt;textString&gt;0.92&lt;/textString&gt;\n            &lt;/resultScore&gt;\n            &lt;!--      Added element      --&gt;\n            &lt;resultData&gt;\n              &lt;url&gt;https://www.example.com/cool_lti_link_submission&lt;/url&gt;\n            &lt;/resultData&gt;\n          &lt;/result&gt;\n        &lt;/resultRecord&gt;\n      &lt;/replaceResultRequest&gt;\n    &lt;/imsx_POXBody&gt;\n  &lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n</section>");
   
 });
 
-Ember.TEMPLATES['docs/xml'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
-this.compilerInfo = [3,'>= 1.0.0-rc.4'];
-helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  
-
-
-  data.buffer.push("<h2>docs/xml</h2>\n\n");
-  
-});
-
-Ember.TEMPLATES['docs/extensions/canvas'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
-this.compilerInfo = [3,'>= 1.0.0-rc.4'];
-helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  
-
-
-  data.buffer.push("<h2>docs/extensions/canvas</h2>\n\n");
-  
-});
-
-Ember.TEMPLATES['docs/extensions/content'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
-this.compilerInfo = [3,'>= 1.0.0-rc.4'];
-helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  
-
-
-  data.buffer.push("<h2>docs/extensions/content</h2>\n\n");
-  
-});
-
-Ember.TEMPLATES['docs/extensions/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
-this.compilerInfo = [3,'>= 1.0.0-rc.4'];
-helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  
-
-
-  data.buffer.push("<h2>docs/extensions/index</h2>\n\n");
-  
-});
-
-Ember.TEMPLATES['docs/extensions/result_data'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
-this.compilerInfo = [3,'>= 1.0.0-rc.4'];
-helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  
-
-
-  data.buffer.push("<h2>docs/extensions/result_data</h2>\n\n");
-  
-});
-
-Ember.TEMPLATES['docs/basics/_building_an_lti_app'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['basics/building_an_lti_app'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
@@ -829,7 +1097,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 });
 
-Ember.TEMPLATES['docs/basics/_introduction'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['basics/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
@@ -839,7 +1107,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 });
 
-Ember.TEMPLATES['docs/basics/_other_resources'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['basics/other_resources'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
@@ -849,7 +1117,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 });
 
-Ember.TEMPLATES['docs/basics/_post_parameters'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['basics/post_parameters'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
@@ -865,7 +1133,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>App Details</h2>\n  <p>\n    Returns information on a single app. This doesn't provide any additional information than what's available in the app list response.\n  </p>\n\n  <code>GET /api/v1/apps/:app_id</code>\n  <pre>{\n  \"id\": \"unique_identifier\",\n  \"name\": \"Human Readable App Name\",\n  // Same as above\n},\n</pre>\n</section>");
   
 });
 
@@ -875,7 +1143,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>App Reviews List</h2>\n  <p>\n    Returns a paginated list of reviews for the specified app. Reviews may have come from multiple sources, including from the site itself using Twitter logins, or from other platforms/apps that have registered. More information on registering an app is available in <a href=\"#contributing\">the \"contributing\" section.</a>\n  </p>\n\n  <code>GET /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"objects\": [\n    {\n      \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n      \"source_name\": \"Human-readable name of platform/app where user posted\",\n      \"tool_name\": \"Human-readable name of the app\",\n      \"rating\": 3, // out of 5\n      \"source_url\": \"http://example.com/platform_or_app/homepage\",\n      \"user_name\": \"User name\",\n      \"user_url\": \"http://example.com/user/profile\",\n      \"id\": 1,\n      \"comments\": \"user-provided comments, if any\",\n      \"created\": \"Jun 19, 2012\"\n    }\n  ],\n  \"meta\": {\n    \"next\": \"http://example.com/more/reviews\"\n  }}\n</pre>\n</section>");
   
 });
 
@@ -885,7 +1153,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>App List</h2>\n  <p>\n    Returns a list of all known apps. Includes some summary information around the number of ratings and comments, as well as all information needed to configure and place the apps in a learning system.\n  </p>\n \n  <code>GET /api/v1/apps</code>\n  <pre class=\"prettyprint\">{\n  \"meta\": \n    {\n      \"next\": \"http://url.for/more/objects/if/any\"\n    },\n  \"objects\": [\n    {\n      \"id\": \"unique_identifier\",\n      \"name\": \"Human Readable App Name\",\n      \"extensions\": [\"multiple\", \"values\"], // possible values: editor_button, resource_selection, user_nav, course_nav, account_nav\n      \"added\": \"2012-03-27T00:00:00Z\",\n      \"avg_rating\": 3.5,\n      \"banner_url\": \"http://example.com/240x125.png\",\n      \"logo_url\": \"http://example.com/72x72.png\",\n      \"launch_url\": \"http://example.com/app.launch\",\n      \"any_key\": true,\n      \"short_description\": \"Short app description\",\n      \"comments_count\": 21,\n      \"ratings_count\": 45,\n      \"preview\": {\n        \"url\":\"/twitter.html\",\n        \"height\":475\n      },\n      \"categories\": [\"list of\", \"human-readable\", \"category names\"],\n      \"levels\": [\"multiple\", \"values\"], // possible values: \"K-6th Grade\", \"7th-12th Grade\", \"Postsecondary\"\n      \"description\": \"Longer app description\",\n      \"config_url\": \"http://more.info/available/below\"\n    },\n    { ... },\n    { ... }\n  ]\n}</pre>\n\n  <h3>Optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>level</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are marked for the \n      specified grade level. The levels are available\n      on the home page, and are \n      <code>all</code>, \n      <code>K-6th Grade</code>, \n      <code>7th-12th Grade</code>, and\n      <code>Postsecondary</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>category</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are categorized for\n      the specified category. The categories are available\n      on the home page, and are\n      <code>all</code>,\n      <code>Community</code>, \n      <code>Content</code>, \n      <code>Math</code>, \n      <code>Open Content</code>, \n      <code>Science</code>, \n      <code>Study Helps</code>, \n      <code>Textbooks/eBooks</code>, and\n      <code>Web 2.0</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>recent</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps have been added in\n      the past 24 weeks. If less than 6 apps have been \n      added in the last 24 weeks, it will go back farther\n      until at least 6 apps are returned.\n      Setting this value to anything other\n      than an empty string will apply the filter.\n      </td>\n    </tr>\n    <tr>\n      <td><code>platform</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that can be used in\n      the specified platform. This is a bit of a placeholder\n      parameter, since right now there are only two\n      options, <code>Canvas</code> and anything other\n      than <code>Canvas</code>. As more apps and extensions\n      are added, more platforms will be explicitly supported.\n      </td>\n    </tr>\n    <tr>\n      <td><code>extension</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that support the\n      specified extension. Available extensions are\n      <code>all</code>, \n      <code>editor_button</code>, \n      <code>resource_selection</code>, \n      <code>user_navigation</code>, and\n      <code>course_navigation</code>\n      </td>\n    </tr></tbody>\n  </table>\n\n  <p>\n    Most of the information is consistent across all apps. <code>preview</code> is an optional value, and there are some possible configuration options listed below:\n  </p>\n\n  <h3>Possible Configuration Return Values</h3>\n  <table class=\"table table-bordered table-striped\">\n            <tbody><tr>\n              <td><code>config_directions</code></td>\n              <td>\n                This app doesn't have a standardized\n                way to configure it, so instead it will return \n                some HTML code containing\n                directions on how to manually configure the app.\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_url</code>\n              </td>\n              <td>\n                <p>\n                  If <code>config_options</code> is not provided, then this is\n                  the url that can be queried to retrieve the XML configuration\n                  for this app.\n                </p>\n                <p>\n                  If <code>config_options</code> is provided, then it will contain\n                  a list of options that can be specified by the user to help\n                  specify app configuration. These options should be appended\n                  to <code>config_url</code> as query parameters. The format of \n                  the options is below.\n                </p>\n<pre>{\n    \"name\": \"query_parameter_key\",\n    \"description\": \"Human-readable description\", \n    \"required\": true,\n    \"type\": \"text\", // possible values: text, checkbox\n    \"value\": \"default_query_parameter_value\"\n},\n{ ... },\n{ ... } \n</pre>\n                <p></p>\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_urls</code></td>\n              <td>\n                <p>This value provides a list of configuration URLs rather than\n                a single configuration URL. <code>config_options</code> can\n                still be specified as with <code>config_url</code>. The format\n                of the URL list is below.\n                </p>\n<pre>{\n  \"url\": \"http://example.com/config.xml\",\n  \"description\": \"Human-readable description\"\n},\n{ ... },\n{ ... }\n</pre>\n              </td>\n            </tr>\n              \n          </tbody></table>\n</section>");
   
 });
 
@@ -895,17 +1163,17 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>Contributing Reviews</h2>\n  <p>\n    Allows adding ratings and reviews from a registered platform or app. Required/optional fields are listed below. For more information on registering an app, please <a href=\"https://twitter.com/whitmer\">contact @whitmer</a>.\n  </p>\n  \n  <code>POST /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n\n  <h3>Required/optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>access_token</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the access token provided by this site to\n      the platform/app after registration. This should be kept secret\n      (i.e. server-side only -- don't put it in your JavaScript), \n      otherwise anyone can post comments and ratings as if they were\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>rating</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is an integer from 1 to 5.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_name</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the human-readable name for the commenting\n      user within\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_id</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the unique identifier for the user.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the public profile URL for the user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_avatar_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the URL to a public avatar image for the\n      commenting user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>comments</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the plaintext comments provided by the user.\n      </td>\n    </tr>\n  </tbody></table>\n</section>");
   
 });
 
-Ember.TEMPLATES['api/introduction'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+Ember.TEMPLATES['api/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>Introduction</h2>\n  <p>\n    All of the information on Edu-Apps.org is programmatically available. You can call the API to get the current information out. You can also help add to the magic by registering your learning platform here. Then not only can your users see the apps and ratings, but they can also post app ratings back to LTI of Magic through your platform. Find out how at the bottom of the page.\n  </p>\n  <p>\n    APIs are cool. This one returns paginated JSON responses. There's no auth required for anything other than posting comments and reviews. All pagination information is included in the JSON response body.\n  </p>\n</section>");
   
 });
 
@@ -915,7 +1183,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("asdf");
+  data.buffer.push("<section>\n  <h2>Retrieving a Review</h2>\n  <p>\n    You can retrieve a specific review (to see for example if the current user has already reviewed the specified app) by calling. Requires the same <code>user_id</code> and <code>access_token</code> used when posting the review.\n  </p>\n  <code>GET /api/v1/apps/:app_id/reviews/:access_token/:user_id</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n</section>");
   
 });
 

@@ -6,7 +6,7 @@
           {{#linkTo "index" class="brand"}}Edu Apps{{/linkTo}}
 
           <ul class="nav nav-pills pull-right">
-            {{#view App.NavView}}<a href="#">Apps</a>{{/view}}
+            {{#view App.NavView}}{{#linkTo 'apps'}}Apps{{/linkTo}}{{/view}}
             {{#view App.NavView}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/view}}
             {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
             {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
@@ -21,4 +21,11 @@
 <div id="content">
   {{outlet}}
 </div>
+
+<footer id="footer">
+  <p class="muted">
+    This site and its contents are <a href="https://github.com/cavneb/edu_apps">available on GitHub</a> under the MIT license. Official IMS LTI docs are found on the <a href="http://www.imsglobal.org/lti/">IMS page</a>.<br>
+    Also check out IMS's <a href="http://www.imsglobal.org/lti">LTI Directory</a> and details on<a href="http://www.imscert.org">LTI Conformance</a>.
+  </p>
+</footer>
 

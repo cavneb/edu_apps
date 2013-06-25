@@ -1,6 +1,6 @@
 var DocsRoute = Ember.Route.extend({
   redirect: function() {
-    this.transitionTo('docs.basics')
+    this.transitionTo('basics.index');
   }
 });
 
