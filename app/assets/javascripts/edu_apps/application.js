@@ -19,7 +19,9 @@ module.exports = App;
 var App = require('./app');
 
 App.Router.map(function() {
-  this.route('apps');
+  this.resource('apps', function() {
+    this.route('show', { path: '/:app_id' });
+  });
   this.resource('tutorials', function() {
     this.route('canvas');
     this.route('moodle');
@@ -61,6 +63,8 @@ App.Router.map(function() {
 });
 
 });require.register("config/store.js", function(module, exports, require, global){
+DS.RESTAdapter.configure("plurals", { category: "categories" });
+
 DS.RESTAdapter.reopen({
   namespace: 'api/v1'
 });
@@ -84,6 +88,30 @@ var ApplicationController = Ember.ObjectController.extend({
 });
 
 module.exports = ApplicationController;
+
+
+});require.register("controllers/apps/index_controller.js", function(module, exports, require, global){
+var AppsIndexController = Ember.ArrayController.extend({
+
+});
+
+module.exports = AppsIndexController;
+
+
+});require.register("controllers/apps/show_controller.js", function(module, exports, require, global){
+var AppsShowController = Ember.ObjectController.extend({
+
+});
+
+module.exports = AppsShowController;
+
+
+});require.register("controllers/categories_controller.js", function(module, exports, require, global){
+var CategoriesController = Ember.ArrayController.extend({
+
+});
+
+module.exports = CategoriesController;
 
 
 });require.register("controllers/change_password_controller.js", function(module, exports, require, global){
@@ -130,6 +158,22 @@ var ChangePasswordController = Ember.ObjectController.extend({
 });
 
 module.exports = ChangePasswordController;
+
+
+});require.register("controllers/debug_controller.js", function(module, exports, require, global){
+var DebugController = Ember.ObjectController.extend({
+
+});
+
+module.exports = DebugController;
+
+
+});require.register("controllers/education_levels_controller.js", function(module, exports, require, global){
+var EducationLevelsController = Ember.ArrayController.extend({
+
+});
+
+module.exports = EducationLevelsController;
 
 
 });require.register("controllers/flash_controller.js", function(module, exports, require, global){
@@ -215,18 +259,22 @@ var SessionRegisterController = Ember.ObjectController.extend({
     var self = this;
     var user = this.get('model');
 
+
     user.on('didCreate', function() {
       self.get('target').send('loginUser', user);
       self.get('target').transitionTo('apps');
     });
+    
+    debugger;
+    this.get('store').commit();
 
     // Validation will occur both on the initial validate() and the server-side
-    user.validate().then(function() {
-      valid = user.get('isValid');
-      if (valid) {
-        self.get('store').commit();
-      }
-    });
+    // user.validate().then(function() {
+    //   valid = user.get('isValid');
+    //   if (valid) {
+        // self.get('store').commit();
+    //   }
+    // });
   }
 
 });
@@ -243,11 +291,19 @@ require('./templates');
 
 
 App.ApplicationController = require('./controllers/application_controller');
+App.CategoriesController = require('./controllers/categories_controller');
 App.ChangePasswordController = require('./controllers/change_password_controller');
+App.DebugController = require('./controllers/debug_controller');
+App.EducationLevelsController = require('./controllers/education_levels_controller');
 App.FlashController = require('./controllers/flash_controller');
 App.ProfileController = require('./controllers/profile_controller');
 App.SessionLoginController = require('./controllers/session/login_controller');
 App.SessionRegisterController = require('./controllers/session/register_controller');
+App.AppsIndexController = require('./controllers/apps/index_controller');
+App.AppsShowController = require('./controllers/apps/show_controller');
+App.Category = require('./models/category');
+App.EducationLevel = require('./models/education_level');
+App.LtiApp = require('./models/lti_app');
 App.User = require('./models/user');
 App.UserPasswordForm = require('./models/user_password_form');
 App.ApplicationRoute = require('./routes/application_route');
@@ -259,6 +315,9 @@ App.SessionRoute = require('./routes/session_route');
 App.TutorialsRoute = require('./routes/tutorials_route');
 App.SessionLoginRoute = require('./routes/session/login_route');
 App.SessionRegisterRoute = require('./routes/session/register_route');
+App.AppsIndexRoute = require('./routes/apps/index_route');
+App.AppsShowRoute = require('./routes/apps/show_route');
+App.DebugView = require('./views/debug_view');
 App.NavView = require('./views/nav_view');
 
 require('./config/routes');
@@ -266,16 +325,55 @@ require('./config/routes');
 module.exports = App;
 
 
+});require.register("models/category.js", function(module, exports, require, global){
+var Category = DS.Model.extend({
+  name:       DS.attr('string'),
+  short_name: DS.attr('string')
+});
+
+module.exports = Category;
+
+
+});require.register("models/education_level.js", function(module, exports, require, global){
+var EducationLevel = DS.Model.extend({
+  name:       DS.attr('string'),
+  short_name: DS.attr('string')
+});
+
+module.exports = EducationLevel;
+
+
+});require.register("models/lti_app.js", function(module, exports, require, global){
+var LtiApp = DS.Model.extend({
+
+  // attributes
+  name:                 DS.attr('string'),
+  short_name:           DS.attr('string'),
+  description:          DS.attr('string'),
+  testing_instructions: DS.attr('string'),
+  author_name:          DS.attr('string'),
+  app_type:             DS.attr('string'),
+  ims_cert_url:         DS.attr('string'),
+  created_at:           DS.attr('date'),
+  updated_at:           DS.attr('date')
+
+});
+
+module.exports = LtiApp;
+
+
 });require.register("models/user.js", function(module, exports, require, global){
 var User = DS.Model.extend(Ember.Validations.Mixin, {
 
   // attributes
-  email:                DS.attr('string'),
-  access_token:         DS.attr('string'),
-  name:                 DS.attr('string'),
-  organization:         DS.attr('string'),
-  password:             DS.attr('string'),
-  passwordConfirmation: DS.attr('string'),
+  email:                   DS.attr('string'),
+  access_token:            DS.attr('string'),
+  name:                    DS.attr('string'),
+  organization_name:       DS.attr('string'),
+  password:                DS.attr('string'),
+  passwordConfirmation:    DS.attr('string'),
+  is_anonymous_tools_only: DS.attr('boolean'),
+  is_auto_approve_tools:   DS.attr('boolean'),
 
   // validations
   validations: {
@@ -283,6 +381,9 @@ var User = DS.Model.extend(Ember.Validations.Mixin, {
     password: {
       length: { minimum: 6 },
       confirmation: { message: 'must match the password confirmation field' }
+    },
+    organization_name: {
+      presence: true
     }
   },
 
@@ -349,6 +450,9 @@ var ApplicationRoute = Ember.Route.extend({
 
   setupController: function(controller, currentUser) {
     controller.set('model', currentUser);
+    this.controllerFor('categories').set('model', App.Category.find());
+    this.controllerFor('education_levels').set('model', App.EducationLevel.find());
+    this.controllerFor('apps.index').set('model', App.LtiApp.find());
   },
 
   events: {
@@ -383,6 +487,28 @@ var ApplicationRoute = Ember.Route.extend({
 });
 
 module.exports = ApplicationRoute;
+
+
+});require.register("routes/apps/index_route.js", function(module, exports, require, global){
+var AppsIndexRoute = Ember.Route.extend({
+
+});
+
+module.exports = AppsIndexRoute;
+
+
+});require.register("routes/apps/show_route.js", function(module, exports, require, global){
+var AppsShowRoute = Ember.Route.extend({
+  model: function(params) {
+    return App.LtiApp.find(params.app_id);
+  },
+
+  serialize: function(model, params) {
+    return { app_id: model.get('short_name') };
+  }
+});
+
+module.exports = AppsShowRoute;
 
 
 });require.register("routes/change_password_route.js", function(module, exports, require, global){
@@ -443,7 +569,9 @@ module.exports = SessionLoginRoute;
 });require.register("routes/session/register_route.js", function(module, exports, require, global){
 var SessionRegisterRoute = Ember.Route.extend({
   model: function() {
-    return App.User.createRecord();
+    user = App.User.createRecord();
+    this.controllerFor('debug').set('model', user);
+    return user;
   }
 });
 
@@ -803,7 +931,12 @@ function program20(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("\n</div>\n\n<footer id=\"footer\">\n  <p class=\"muted\">\n    This site and its contents are <a href=\"https://github.com/cavneb/edu_apps\">available on GitHub</a> under the MIT license. Official IMS LTI docs are found on the <a href=\"http://www.imsglobal.org/lti/\">IMS page</a>.<br>\n    Also check out IMS's <a href=\"http://www.imsglobal.org/lti\">LTI Directory</a> and details on<a href=\"http://www.imscert.org\">LTI Conformance</a>.\n  </p>\n</footer>\n\n");
+  data.buffer.push("\n</div>\n\n");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.render),stack1 ? stack1.call(depth0, "debug", options) : helperMissing.call(depth0, "render", "debug", options))));
+  data.buffer.push("\n\n<footer id=\"footer\">\n  <p class=\"muted\">\n    This site and its contents are <a href=\"https://github.com/cavneb/edu_apps\">available on GitHub</a> under the MIT license. Official IMS LTI docs are found on the <a href=\"http://www.imsglobal.org/lti/\">IMS page</a>.<br>\n    Also check out IMS's <a href=\"http://www.imsglobal.org/lti\">LTI Directory</a> and details on<a href=\"http://www.imscert.org\">LTI Conformance</a>.\n  </p>\n</footer>\n\n");
   return buffer;
   
 });
@@ -811,10 +944,47 @@ function program20(depth0,data) {
 Ember.TEMPLATES['apps'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, hashTypes, hashContexts, self=this, escapeExpression=this.escapeExpression;
+
+function program1(depth0,data) {
   
+  
+  data.buffer.push("<a href=\"#\" class=\"active\">Aphabetical<div class=\"arrow-down\"></div></a>");
+  }
 
+function program3(depth0,data) {
+  
+  
+  data.buffer.push("<a href=\"#\">Popular<div class=\"arrow-down\"></div></a>");
+  }
 
-  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <h2>Apps</h2>\n  </div>\n</div>");
+function program5(depth0,data) {
+  
+  
+  data.buffer.push("<a href=\"#\">Recent<div class=\"arrow-down\"></div></a>");
+  }
+
+  data.buffer.push("<div class=\"sub-nav-wrapper\">\n  <div class=\"text-center\">\n    <ul class=\"nav nav-pills sub-nav\">\n      ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n      ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(3, program3, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n      ");
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(5, program5, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  data.buffer.push("\n    </ul>\n  </div>\n</div>\n\n<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    ");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "outlet", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("\n  </div>\n</div>");
+  return buffer;
   
 });
 
@@ -997,6 +1167,45 @@ function program1(depth0,data) {
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.newPasswordConfirmation", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push("</small>\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button class=\"btn btn-primary\" type=\"submit\">Update Password</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  return buffer;
+  
+});
+
+Ember.TEMPLATES['debug'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', hashTypes, hashContexts, escapeExpression=this.escapeExpression;
+
+
+  data.buffer.push("<table style=\"width: 200px;\">\n  <tbody>\n    <tr><td>isLoaded:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isLoaded", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isDirty:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isDirty", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isSaving:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isSaving", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isDeleted:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isDeleted", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isError:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isError", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isNew:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isNew", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n    <tr><td>isValid:</td><td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "isValid", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</td></tr>\n  </tbody>\n</table>");
   return buffer;
   
 });
@@ -1321,25 +1530,6 @@ function program1(depth0,data) {
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("</small>\n          </div>\n          <div ");
-  hashContexts = {'class': depth0};
-  hashTypes = {'class': "STRING"};
-  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
-    'class': (":controls errors.organization:error")
-  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push(">\n            ");
-  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
-  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
-  options = {hash:{
-    'type': ("text"),
-    'value': ("organization"),
-    'placeholder': ("Company/Organization")
-  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n            <small class=\"below\">");
-  hashTypes = {};
-  hashContexts = {};
-  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.organization", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push("</small>\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button ");
   hashContexts = {'disabled': depth0};
   hashTypes = {'disabled': "STRING"};
@@ -1669,21 +1859,21 @@ function program1(depth0,data) {
   hashContexts = {'class': depth0};
   hashTypes = {'class': "STRING"};
   data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
-    'class': (":controls errors.organization:error")
+    'class': (":controls errors.organization_name:error")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
     'type': ("text"),
-    'value': ("organization"),
+    'value': ("organization_name"),
     'placeholder': ("Company/Organization")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
   data.buffer.push("\n            <small class=\"below\">");
   hashTypes = {};
   hashContexts = {};
-  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.organization", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.organization_name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push("</small>\n          </div>\n          <div class=\"controls\">\n            <button class=\"btn btn-primary\" type=\"submit\">Register</button>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
   return buffer;
   
@@ -1892,6 +2082,54 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
 
 
   data.buffer.push("<section id=\"docs-post-parameters\">\n  <h2>POST Parameters</h2>\n  <p>\n    These are all of the known values that can be passed from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span> when a user clicks a link to launch the app.\n  </p>\n  <h3>Most Common Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lti_message_type</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>basic-lti-launch-request</code></td>\n      </tr>\n      <tr>\n        <td><code>lti_version</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>LTI-1p0</code></td>\n      </tr>\n      <tr>\n        <td><code>resource_link_id</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>\n        unique id referencing the link, or \"placement\", of the app in the\n        <span class=\"label label-warning\">consumer</span>. If an app was added twice\n        to the same class, each placement would send a different id, and\n        should be considered a unique \"launch\". For example, if the\n        <span class=\"label label-info\">provider</span> were a chat room\n        app, then each <code>resource_link_id</code> would be a separate\n        room.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n        unique id referencing the user accessing the\n        app. <span class=\"label label-info\">providers</span> should\n        consider this id an opaque identifier.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_image</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>if provided, this would be a url to an avatar image for\n        the current user. We recommend that these urls be 50px wide\n        and tall, and don't expire for at least 3 months.</td>\n      </tr>\n      <tr>\n        <td><code>roles</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>there's a long list of possible roles, but here's the\n          most common ones:</p>\n          <ul>\n            <li><code>Learner</code></li>\n            <li><code>Instructor</code></li>\n            <li><code>ContentDeveloper</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Observer</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Administrator</code></li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_full</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Full name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_outcome_service_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this url is passed to the <span class=\"label label-info\">provider</span> then it means the app is authorized to send grade values back to the <span class=\"label label-warning\">consumer</span> gradebook for any students that access the app. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/assignment_tools.html\">Canvas API documentation</a>.</td>\n      </tr>\n      <tr>\n        <td><code>selection_directive</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this parameter is passed to the <span class=\"label label-info\">provider</span> then it means the <span class=\"label label-warning\">consumer</span> is expecting the <span class=\"label label-info\">provider</span> to return some piece of information such as a url, an html snippet, etc. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas API documentation</a>.</td>\n      </tr>\n    </tbody>\n  </table>\n  <h3>Additional Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lis_person_name_given</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>First name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_family</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Last name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_contact_email_primary</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Email address of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>context_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>unique id of the course from which the user is accessing the app. If a app were added multiple times to the same course, this id would be the same regardless of which link was used to launch the app.</td>\n      </tr>\n      <tr>\n        <td><code>context_type</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>this is the type of context from which the user is accessing the app. If it's provided, this will most likely be <code>CourseSection</code></td>\n      </tr>\n      <tr>\n        <td><code>context_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>context_label</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>short name or course code of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_locale</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>locale (i.e. <code>en-US</code>) for the user accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_document_target</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>if provided, this value will be either <code<window< code=\"\"> (if the app has been launched in a new window) or <code>iframe</code>.</code<window<></td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_css_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>css file that could be included by the <span class=\"label label-info\">provider</span> to help its styling better match the <span class=\"label label-warning\">consumer</span> styling. This isn't well-documented, so I typically pretend it doesn't exist.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_width</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>width of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_height</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>height of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_return_url</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>url to send the user to when they're finished with the <span class=\"label label-info\">provider</span>. The <span class=\"label label-info\">provider</span> can optionally send one of four values as query parameters appended to the url:</p>\n          <ul>\n            <li><code>lti_errormsg</code> - error message to show to the user</li>\n            <li><code>lti_errorlog</code> - error message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n            <li><code>lti_msg</code> - success message to show to the user</li>\n            <li><code>lti_log</code> - success message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_product_family_code</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>product name for the <span class=\"label label-warning\">consumer</span>. This could\n        be something like <code>moodle</code>, <code>sakai</code> or <code>canvas</code></td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_version</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>version number of the <span class=\"label label-warning\">consumer</span> product.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_guid</code></td>\n        <td><span class=\"label\">strongly recommended</span></td>\n        <td>unique id referencing the instance from which the user is accessing the app. This mostly makes sense only in a multi-tenant environment.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_name</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>url of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_contact_email</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>email address of a contact at the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>custom_*</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>\n          any number of custom values can optionally be sent across. The key\n          for any custom values should start with <code>custom_</code> and should\n          be in snake case. Custom values can optionally be defined on the \n          <span class=\"label label-warning\">consumer</span> side as part of the app configuration\n          process.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</section>");
+  
+});
+
+Ember.TEMPLATES['apps/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var stack1, hashTypes, hashContexts, escapeExpression=this.escapeExpression, self=this, helperMissing=helpers.helperMissing;
+
+function program1(depth0,data) {
+  
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options;
+  data.buffer.push("\n  <h4>");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0,depth0],types:["STRING","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "apps.show", "", options) : helperMissing.call(depth0, "linkTo", "apps.show", "", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</h4>\n");
+  return buffer;
+  }
+function program2(depth0,data) {
+  
+  var hashTypes, hashContexts;
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  }
+
+  hashTypes = {};
+  hashContexts = {};
+  stack1 = helpers.each.call(depth0, "controller", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
+  else { data.buffer.push(''); }
+  
+});
+
+Ember.TEMPLATES['apps/show'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', hashTypes, hashContexts, escapeExpression=this.escapeExpression;
+
+
+  data.buffer.push("<h2>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</h2>\n\n");
+  return buffer;
   
 });
 
@@ -53343,6 +53581,14 @@ DS.LSAdapter = DS.Adapter.extend(Ember.Evented, {
   }
 
 });
+
+
+});require.register("views/debug_view.js", function(module, exports, require, global){
+var DebugView = Ember.View.extend({
+  templateName: 'debug'
+});
+
+module.exports = DebugView;
 
 
 });require.register("views/nav_view.js", function(module, exports, require, global){

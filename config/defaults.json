@@ -1,0 +1,32 @@
+{
+  "categories": {
+    "assessment": "Assessment",
+    "community": "Community",
+    "content": "Content",
+    "math": "Math",
+    "media": "Media",
+    "open_content": "Open Content",
+    "science": "Science",
+    "study_helps": "Study Helps",
+    "textbooks": "Textbooks/eBooks",
+    "web_20": "Web 2.0"
+  },
+
+  "education_levels": {
+    "K-6": "K-6th Grade",
+    "7-12": "7th-12th Grade",
+    "postsecondary": "Postsecondary"
+  },
+
+  "privacy_levels": {
+    "public": "Public",
+    "name_only": "Name Only",
+    "email_only": "Email Only",
+    "anonymous": "Anonymous"
+  },
+
+  "app_types": {
+    "open_launch": "Open Launch", 
+    "data": "Data"
+  }
+}

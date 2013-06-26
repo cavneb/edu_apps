@@ -1,12 +1,14 @@
 var User = DS.Model.extend(Ember.Validations.Mixin, {
 
   // attributes
-  email:                DS.attr('string'),
-  access_token:         DS.attr('string'),
-  name:                 DS.attr('string'),
-  organization:         DS.attr('string'),
-  password:             DS.attr('string'),
-  passwordConfirmation: DS.attr('string'),
+  email:                   DS.attr('string'),
+  access_token:            DS.attr('string'),
+  name:                    DS.attr('string'),
+  organization_name:       DS.attr('string'),
+  password:                DS.attr('string'),
+  passwordConfirmation:    DS.attr('string'),
+  is_anonymous_tools_only: DS.attr('boolean'),
+  is_auto_approve_tools:   DS.attr('boolean'),
 
   // validations
   validations: {
@@ -14,6 +16,9 @@ var User = DS.Model.extend(Ember.Validations.Mixin, {
     password: {
       length: { minimum: 6 },
       confirmation: { message: 'must match the password confirmation field' }
+    },
+    organization_name: {
+      presence: true
     }
   },
 

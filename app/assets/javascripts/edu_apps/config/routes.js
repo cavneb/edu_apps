@@ -1,7 +1,9 @@
 var App = require('./app');
 
 App.Router.map(function() {
-  this.route('apps');
+  this.resource('apps', function() {
+    this.route('show', { path: '/:app_id' });
+  });
   this.resource('tutorials', function() {
     this.route('canvas');
     this.route('moodle');

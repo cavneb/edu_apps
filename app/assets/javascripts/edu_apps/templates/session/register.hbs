@@ -27,9 +27,9 @@
             {{input type="text" value=name placeholder="Full Name"}}
             <small class="below">{{errors.name}}</small>
           </div>
-          <div {{bindAttr class=":controls errors.organization:error"}}>
-            {{input type="text" value=organization placeholder="Company/Organization"}}
-            <small class="below">{{errors.organization}}</small>
+          <div {{bindAttr class=":controls errors.organization_name:error"}}>
+            {{input type="text" value=organization_name placeholder="Company/Organization"}}
+            <small class="below">{{errors.organization_name}}</small>
           </div>
           <div class="controls">
             <button class="btn btn-primary" type="submit">Register</button>

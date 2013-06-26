@@ -1,5 +1,8 @@
 class User < ActiveRecord::Base
   has_secure_password
+
+  belongs_to :organization
+  has_many :lti_apps
   
   before_create :generate_access_token
   

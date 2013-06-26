@@ -11,18 +11,63 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20130626143742) do
+ActiveRecord::Schema.define(version: 20130626214508) do
 
-  create_table "users", force: true do |t|
-    t.string   "email",           null: false
-    t.string   "password_digest", null: false
-    t.string   "access_token",    null: false
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string   "organization"
-    t.string   "name"
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
+
+  create_table "categories", force: true do |t|
+    t.string "name"
+    t.string "short_name"
   end
 
-  add_index "users", ["access_token"], name: "index_users_on_access_token", unique: true
+  create_table "education_levels", force: true do |t|
+    t.string "name"
+    t.string "short_name"
+  end
+
+  create_table "lti_apps", force: true do |t|
+    t.integer  "user_id",                                               null: false
+    t.string   "short_name",                                            null: false
+    t.string   "name",                                                  null: false
+    t.text     "description"
+    t.string   "status",                            default: "pending", null: false
+    t.text     "testing_instructions"
+    t.string   "support_url",          limit: 1000
+    t.string   "author_name"
+    t.boolean  "is_public"
+    t.string   "app_type"
+    t.string   "ims_cert_url",         limit: 1000
+    t.string   "preview_url",          limit: 1000
+    t.string   "config_url",           limit: 1000
+    t.string   "data_url",             limit: 1000
+    t.json     "cartridge"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "lti_apps", ["short_name"], name: "index_lti_apps_on_short_name", unique: true, using: :btree
+  add_index "lti_apps", ["user_id"], name: "index_lti_apps_on_user_id", using: :btree
+
+  create_table "organizations", force: true do |t|
+    t.string   "name",       null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "users", force: true do |t|
+    t.string   "email",                                   null: false
+    t.string   "password_digest",                         null: false
+    t.string   "access_token",                            null: false
+    t.string   "organization_name"
+    t.string   "name"
+    t.boolean  "is_anonymous_tools_only", default: false
+    t.boolean  "is_auto_approve_tools",   default: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "organization_id"
+  end
+
+  add_index "users", ["access_token"], name: "index_users_on_access_token", unique: true, using: :btree
 
 end
