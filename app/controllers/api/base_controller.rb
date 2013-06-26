@@ -9,7 +9,8 @@ module Api
     end
 
     def current_user
-      user = User.find_by_access_token(params[:access_token])
+      token = params[:access_token] || params[:user][:access_token] rescue nil
+      user = User.find_by_access_token(token)
       if session[:user_id] && user && session[:user_id] == user.id
         return user
       else

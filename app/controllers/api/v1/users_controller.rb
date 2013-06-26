@@ -1,7 +1,7 @@
 module Api
   module V1
     class UsersController < Api::BaseController
-      before_filter :restrict_access, only: [:update, :update_password]
+      before_filter :restrict_access, only: [:update_password]
 
       def index
         render json: User.all
