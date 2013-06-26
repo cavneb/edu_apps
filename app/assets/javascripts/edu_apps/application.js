@@ -5,9 +5,12 @@ require('../vendor/jquery');
 require('../vendor/handlebars');
 require('../vendor/ember');
 require('../vendor/ember-data');
+require('../vendor/ember-validations');
+
+Ember.TESTING_DEPRECATION = true;
 
 var App = Ember.Application.create({ LOG_TRANSITIONS: true });
-App.Store = require('./store'); // delete if you don't want ember-data
+App.Store = require('./store');
 
 module.exports = App;
 
@@ -54,6 +57,7 @@ App.Router.map(function() {
     });
   });
   this.route('profile');
+  this.route('change_password');
 });
 
 });require.register("config/store.js", function(module, exports, require, global){
@@ -80,6 +84,52 @@ var ApplicationController = Ember.ObjectController.extend({
 });
 
 module.exports = ApplicationController;
+
+
+});require.register("controllers/change_password_controller.js", function(module, exports, require, global){
+var ChangePasswordController = Ember.ObjectController.extend({
+
+  reset: function() {
+    this.set('model', new App.UserPasswordForm);
+  },
+
+  submit: function() {
+    var self = this;
+    form = this.get('model');
+
+    // form.validate().then(function() {
+    //   valid = form.get('isValid');
+    //   if (valid) {
+
+        var data = form.getProperties('currentPassword', 'newPassword', 'newPasswordConfirmation');
+        data.access_token = localStorage.token; // TODO: Refactor
+
+        var request = $.ajax({
+          type: 'PUT',
+          url: '/api/v1/users/update_password',
+          data: data
+        });
+
+        request.done(function( msg ) {
+          self.send('showFlash', 'notice', 'Saved');
+          self.reset();
+        });
+
+        request.fail(function(jqXHR, textStatus) {
+          console.log(jqXHR.responseText);
+          var msg = JSON.parse(jqXHR.responseText);
+          var errors = msg.errors;
+          errors.newPasswordConfirmation = errors.password_confirmation;
+          errors.newPassword = errors.password;
+          form.set('errors', Ember.Object.create(errors));
+        });
+    //   }
+    // });
+  }
+
+});
+
+module.exports = ChangePasswordController;
 
 
 });require.register("controllers/flash_controller.js", function(module, exports, require, global){
@@ -113,6 +163,28 @@ var FlashController = Ember.ObjectController.extend({
 module.exports = FlashController;
 
 
+});require.register("controllers/profile_controller.js", function(module, exports, require, global){
+var ProfileController = Ember.ObjectController.extend({
+  
+  save: function() {
+    var self = this;
+    var user = this.get('model');
+    
+    user.on('didUpdate', function() {
+      self.send('showFlash', 'notice', 'Saved');
+    });
+
+    // Validation will occur both on the initial validate() and the server-side
+    self.get('store').commit();
+  },
+
+  isNotDirty: Ember.computed.not('content.isDirty')
+
+});
+
+module.exports = ProfileController;
+
+
 });require.register("controllers/session/login_controller.js", function(module, exports, require, global){
 var SessionLoginController = Ember.Controller.extend({
 
@@ -129,25 +201,37 @@ var SessionLoginController = Ember.Controller.extend({
   
   tokenChanged: function() {
     localStorage.token = this.get('token');
-  }.observes('token'),
+  }.observes('token')
 
-  login: function() {
-    var self = this;
-    var data = this.getProperties('email', 'password');
-    $.post('/api/v1/sessions', data, function(resp) {
-      if (resp.user) {
-        self.set('token', resp.user.access_token);
-        self.get('target').send('loginUser', resp.user);
-        self.get('target').transitionTo('apps');
-      }
-      else {
-        self.get('target').send('showFlash', 'error', 'Invalid username and/or password');
-      }
-    });
-  }
 });
 
 module.exports = SessionLoginController;
+
+
+});require.register("controllers/session/register_controller.js", function(module, exports, require, global){
+var SessionRegisterController = Ember.ObjectController.extend({
+
+  save: function() {
+    var self = this;
+    var user = this.get('model');
+
+    user.on('didCreate', function() {
+      self.get('target').send('loginUser', user);
+      self.get('target').transitionTo('apps');
+    });
+
+    // Validation will occur both on the initial validate() and the server-side
+    user.validate().then(function() {
+      valid = user.get('isValid');
+      if (valid) {
+        self.get('store').commit();
+      }
+    });
+  }
+
+});
+
+module.exports = SessionRegisterController;
 
 
 });require.register("index.js", function(module, exports, require, global){
@@ -159,14 +243,22 @@ require('./templates');
 
 
 App.ApplicationController = require('./controllers/application_controller');
+App.ChangePasswordController = require('./controllers/change_password_controller');
 App.FlashController = require('./controllers/flash_controller');
+App.ProfileController = require('./controllers/profile_controller');
 App.SessionLoginController = require('./controllers/session/login_controller');
+App.SessionRegisterController = require('./controllers/session/register_controller');
 App.User = require('./models/user');
+App.UserPasswordForm = require('./models/user_password_form');
 App.ApplicationRoute = require('./routes/application_route');
+App.ChangePasswordRoute = require('./routes/change_password_route');
 App.DocsRoute = require('./routes/docs_route');
 App.IndexRoute = require('./routes/index_route');
+App.ProfileRoute = require('./routes/profile_route');
+App.SessionRoute = require('./routes/session_route');
 App.TutorialsRoute = require('./routes/tutorials_route');
 App.SessionLoginRoute = require('./routes/session/login_route');
+App.SessionRegisterRoute = require('./routes/session/register_route');
 App.NavView = require('./views/nav_view');
 
 require('./config/routes');
@@ -175,13 +267,74 @@ module.exports = App;
 
 
 });require.register("models/user.js", function(module, exports, require, global){
-var User = DS.Model.extend({
-  email: DS.attr('string'),
-  access_token: DS.attr('string')
+var User = DS.Model.extend(Ember.Validations.Mixin, {
+
+  // attributes
+  email:                DS.attr('string'),
+  access_token:         DS.attr('string'),
+  name:                 DS.attr('string'),
+  organization:         DS.attr('string'),
+  password:             DS.attr('string'),
+  passwordConfirmation: DS.attr('string'),
+
+  // validations
+  validations: {
+    email: { format: /.+@.+\..{2,4}/ },
+    password: {
+      length: { minimum: 6 },
+      confirmation: { message: 'must match the password confirmation field' }
+    }
+  },
+
+  // callbacks
+
+  becameError: function() {
+    // handle error case here
+    console.log('there was an error!');
+  },
+
+  becameInvalid: function(model) {
+    // This is needed in order for the validations mixin to work with the rails controller response.
+    model.set('errors', Ember.Object.create(model.errors));
+    console.log("Record was invalid because: " + model.get('errors'));
+  }
+
 });
 
 module.exports = User;
 
+
+});require.register("models/user_password_form.js", function(module, exports, require, global){
+var UserPasswordForm = Ember.Object.extend(Ember.Validations.Mixin, {
+  currentPassword: '',
+  newPassword: '',
+  newPasswordConfirmation: '',
+
+  validations: {
+    currentPassword: {
+      presence: true,
+    },
+    newPassword: {
+      length: { minimum: 6 },
+      confirmation: { message: 'must match the password confirmation field' }
+    }
+  },
+
+  // callbacks
+
+  becameError: function() {
+    // handle error case here
+    console.log('there was an error!');
+  },
+
+  becameInvalid: function(model) {
+    // This is needed in order for the validations mixin to work with the rails controller response.
+    model.set('errors', Ember.Object.create(model.errors));
+    console.log("Record was invalid because: " + model.get('errors'));
+  }
+});
+
+module.exports = UserPasswordForm;
 
 });require.register("routes/application_route.js", function(module, exports, require, global){
 var ApplicationRoute = Ember.Route.extend({
@@ -204,8 +357,11 @@ var ApplicationRoute = Ember.Route.extend({
     },
 
     loginUser: function(user) {
+      console.log(user);
       this.controller.set('model', user);
+      this.controllerFor('session_login').set('token', user.get('access_token'));
       this.controllerFor('flash').set('model', { type: 'notice', message: 'You are now logged in!' });
+      this.transitionTo('apps');
     },
 
     logout: function() {
@@ -221,11 +377,22 @@ var ApplicationRoute = Ember.Route.extend({
       self.controller.set('model', null);
       this.controllerFor('session.login').clearToken();
       this.controllerFor('flash').set('model', { type: 'notice', message: 'You have logged out successfully!' });
+      this.transitionTo('session.login');
     }
   }
 });
 
 module.exports = ApplicationRoute;
+
+
+});require.register("routes/change_password_route.js", function(module, exports, require, global){
+var ChangePasswordRoute = Ember.Route.extend({
+  model: function() {
+    return new App.UserPasswordForm;
+  }
+});
+
+module.exports = ChangePasswordRoute;
 
 
 });require.register("routes/docs_route.js", function(module, exports, require, global){
@@ -248,6 +415,21 @@ var IndexRoute = Ember.Route.extend({
 module.exports = IndexRoute;
 
 
+});require.register("routes/profile_route.js", function(module, exports, require, global){
+var ProfileRoute = Ember.Route.extend({
+  model: function() {
+    var token = this.controllerFor('session.login').get('token');
+    if (token == undefined || token === 'null') {
+      return null;
+    } else {
+      return App.User.find(token);
+    }
+  }
+});
+
+module.exports = ProfileRoute;
+
+
 });require.register("routes/session/login_route.js", function(module, exports, require, global){
 var SessionLoginRoute = Ember.Route.extend({
   setupController: function(controller, context) {
@@ -256,6 +438,49 @@ var SessionLoginRoute = Ember.Route.extend({
 });
 
 module.exports = SessionLoginRoute;
+
+
+});require.register("routes/session/register_route.js", function(module, exports, require, global){
+var SessionRegisterRoute = Ember.Route.extend({
+  model: function() {
+    return App.User.createRecord();
+  }
+});
+
+module.exports = SessionRegisterRoute;
+
+
+});require.register("routes/session_route.js", function(module, exports, require, global){
+var SessionRoute = Ember.Route.extend({
+
+  events: {
+    login: function() {
+      var self = this;
+      var loginController = this.controllerFor('session.login');
+      var data = loginController.getProperties('email', 'password');
+      $.post('/api/v1/sessions', data, function(resp) {
+        if (resp.user) {
+          loginController.set('token', resp.user.access_token);
+
+          // It should work like this: (see http://stackoverflow.com/questions/15419381/bootstrapping-data-in-ember-js/15420204#15420204)
+          // App.Store.load(App.User, resp.user);
+          // user = App.Store.find(App.User, resp.user.id);
+
+          // However, let's hack it for now
+          user = App.User.find(resp.user.access_token).then(function(results) {
+            self.send('loginUser', results);
+          });
+
+        } else {
+          self.send('showFlash', 'error', 'Invalid username and/or password');
+        }
+      });
+    }
+  }
+
+});
+
+module.exports = SessionRoute;
 
 
 });require.register("routes/tutorials_route.js", function(module, exports, require, global){
@@ -691,6 +916,91 @@ function program11(depth0,data) {
   
 });
 
+Ember.TEMPLATES['change_password'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
+this.compilerInfo = [3,'>= 1.0.0-rc.4'];
+helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
+
+function program1(depth0,data) {
+  
+  
+  data.buffer.push("back to your profile");
+  }
+
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">Change Password</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>\n          Go ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "profile", options) : helperMissing.call(depth0, "linkTo", "profile", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("\n        </p>\n      </div>\n      <div class=\"span4\">\n        <form ");
+  hashContexts = {'on': depth0};
+  hashTypes = {'on': "STRING"};
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "submit", {hash:{
+    'on': ("submit")
+  },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" class=\"session-form\">\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.currentPassword:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("currentPassword"),
+    'placeholder': ("Current Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.currentPassword", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.newPassword:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("newPassword"),
+    'placeholder': ("New Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.newPassword", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.newPasswordConfirmation:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("password"),
+    'value': ("newPasswordConfirmation"),
+    'placeholder': ("Confirm New Password")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.newPasswordConfirmation", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button class=\"btn btn-primary\" type=\"submit\">Update Password</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  return buffer;
+  
+});
+
 Ember.TEMPLATES['docs'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
@@ -953,16 +1263,33 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
 Ember.TEMPLATES['profile'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  var buffer = '', stack1, hashContexts, hashTypes, options, escapeExpression=this.escapeExpression, helperMissing=helpers.helperMissing;
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression;
 
+function program1(depth0,data) {
+  
+  
+  data.buffer.push("change your password here");
+  }
 
-  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">User Profile</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>\n          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Saepe, eveniet, iusto, dolore, iste ratione quaerat non ex quo laudantium provident necessitatibus repudiandae eligendi veritatis nulla fuga tempore excepturi. Consequuntur, nobis.\n        </p>\n      </div>\n      <div class=\"span4\">\n        <form ");
+  data.buffer.push("<div class=\"bg-light-grey\">\n  <div class=\"container\">\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <h2 class=\"page-header\">User Profile</h2>\n      </div>\n    </div>\n    <div class=\"row-fluid\">\n      <div class=\"span4 offset2\">\n        <p>\n          Need to change your password?<br>\n          You can ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "change_password", options) : helperMissing.call(depth0, "linkTo", "change_password", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("\n        </p>\n      </div>\n      <div class=\"span4\">\n        <form ");
   hashContexts = {'on': depth0};
   hashTypes = {'on': "STRING"};
   data.buffer.push(escapeExpression(helpers.action.call(depth0, "save", {hash:{
     'on': ("submit")
   },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
+  data.buffer.push(" class=\"session-form\">\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.email:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
@@ -971,7 +1298,17 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
     'placeholder': ("Email Address")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.email", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.name:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
@@ -980,7 +1317,17 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
     'placeholder': ("Full Name")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.organization:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
@@ -989,7 +1336,17 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
     'placeholder': ("Company/Organization")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button class=\"btn btn-primary\" type=\"submit\">Save Changes</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.organization", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <button ");
+  hashContexts = {'disabled': depth0};
+  hashTypes = {'disabled': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'disabled': ("isNotDirty")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" class=\"btn btn-primary\" type=\"submit\">Save Changes</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
   return buffer;
   
 });
@@ -1185,7 +1542,7 @@ function program1(depth0,data) {
   hashTypes = {'on': "STRING"};
   data.buffer.push(escapeExpression(helpers.action.call(depth0, "login", {hash:{
     'on': ("submit")
-  },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  },contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
@@ -1204,7 +1561,7 @@ function program1(depth0,data) {
     'placeholder': ("Password")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <label class=\"checkbox pull-right\">\n                <input type=\"checkbox\"> Remember me\n              </label>\n              <button class=\"btn btn-primary\" type=\"submit\">Login</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            <button class=\"btn btn-primary\" type=\"submit\">Login</button>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
   return buffer;
   
 });
@@ -1229,10 +1586,16 @@ function program1(depth0,data) {
   data.buffer.push("</p>\n      </div>\n      <div class=\"span4\">\n        <form ");
   hashContexts = {'on': depth0};
   hashTypes = {'on': "STRING"};
-  data.buffer.push(escapeExpression(helpers.action.call(depth0, "login", {hash:{
+  data.buffer.push(escapeExpression(helpers.action.call(depth0, "save", {hash:{
     'on': ("submit")
   },contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push(" class=\"session-form\">\n          <div class=\"controls\">\n            ");
+  data.buffer.push(" class=\"session-form\">\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.email:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
@@ -1241,7 +1604,17 @@ function program1(depth0,data) {
     'placeholder': ("Email Address")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.email", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.password:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
@@ -1250,16 +1623,68 @@ function program1(depth0,data) {
     'placeholder': ("Password")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"controls\">\n            ");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.password", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.passwordConfirmation:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
   options = {hash:{
     'type': ("password"),
-    'value': ("password_confirmation"),
+    'value': ("passwordConfirmation"),
     'placeholder': ("Confirm Password")
   },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
-  data.buffer.push("\n          </div>\n          <div class=\"control-group\">\n            <div class=\"controls\">\n              <label class=\"checkbox pull-right\">\n                <input type=\"checkbox\"> Remember me\n              </label>\n              <button class=\"btn btn-primary\" type=\"submit\">Login</button>\n            </div>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.passwordConfirmation", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.name:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("text"),
+    'value': ("name"),
+    'placeholder': ("Full Name")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div ");
+  hashContexts = {'class': depth0};
+  hashTypes = {'class': "STRING"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'class': (":controls errors.organization:error")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(">\n            ");
+  hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0};
+  hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING"};
+  options = {hash:{
+    'type': ("text"),
+    'value': ("organization"),
+    'placeholder': ("Company/Organization")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  data.buffer.push(escapeExpression(((stack1 = helpers.input),stack1 ? stack1.call(depth0, options) : helperMissing.call(depth0, "input", options))));
+  data.buffer.push("\n            <small class=\"below\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "errors.organization", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</small>\n          </div>\n          <div class=\"controls\">\n            <button class=\"btn btn-primary\" type=\"submit\">Register</button>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</div>");
   return buffer;
   
 });
@@ -9347,6 +9772,550 @@ DS.RESTAdapter = DS.Adapter.extend({
 
 })();
 
+
+});require.register("vendor/ember-validations.js", function(module, exports, require, global){
+(function() {
+  Ember.Validations = Ember.Namespace.create({
+    VERSION: '0.2.1'
+  });
+})();
+
+(function() {
+  Ember.Application.reopen({
+    bootstrapValidations: function(validations) {
+      var objectName, property, validator, option, value, tmp,
+      normalizedValidations = {}, existingValidations;
+      function normalizeObject(object) {
+        var key, value, normalizedObject = {};
+
+        for (key in object) {
+          if (typeof(object[key]) === 'object') {
+            value = normalizeObject(object[key]);
+          } else {
+            value = object[key];
+          }
+          normalizedObject[key.camelize()] = value;
+        }
+        return normalizedObject;
+      }
+
+      for (objectName in validations) {
+        existingValidations = (new this[objectName.camelize().capitalize()]()).get('validations');
+        normalizedValidations = normalizeObject(validations[objectName]);
+        this[objectName.camelize().capitalize()].reopen({
+          validations: Ember.$.extend(true, {}, normalizedValidations, existingValidations)
+        });
+
+      }
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.messages = {
+    render: function(attribute, context) {
+      return Handlebars.compile(Ember.Validations.messages.defaults[attribute])(context);
+    },
+    defaults: {
+      inclusion: "is not included in the list",
+      exclusion: "is reserved",
+      invalid: "is invalid",
+      confirmation: "doesn't match {{attribute}}",
+      accepted: "must be accepted",
+      empty: "can't be empty",
+      blank: "can't be blank",
+      present: "must be blank",
+      tooLong: "is too long (maximum is {{count}} characters)",
+      tooShort: "is too short (minimum is {{count}} characters)",
+      wrongLength: "is the wrong length (should be {{count}} characters)",
+      notANumber: "is not a number",
+      notAnInteger: "must be an integer",
+      greaterThan: "must be greater than {{count}}",
+      greaterThanOrEqualTo: "must be greater than or equal to {{count}}",
+      equalTo: "must be equal to {{count}}",
+      lessThan: "must be less than {{count}}",
+      lessThanOrEqualTo: "must be less than or equal to {{count}}",
+      otherThan: "must be other than {{count}}",
+      odd: "must be odd",
+      even: "must be even"
+    }
+  };
+})();
+
+(function() {
+  Ember.Validations.Errors = Ember.Object.extend({
+    add: function(property, value) {
+      this.set(property, (this.get(property) || []).concat(value));
+    },
+    clear: function() {
+      var keys = Object.keys(this);
+      var only = null;
+      if ( arguments.length > 1 )
+      {
+        only = Array.prototype.slice.apply(arguments);
+      }
+      else if (arguments.length === 1)
+      {
+        if ( arguments[0] instanceof Array )
+          only = arguments[0];
+        else
+          only = [arguments[0]];
+      }
+      for(var i = 0; i < keys.length; i++) {
+        if ( only && only.indexOf(keys[i]) < 0 )
+          continue;
+
+        this.set(keys[i], undefined);
+        delete this[keys[i]];
+      }
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.Mixin = Ember.Mixin.create({
+    init: function() {
+      this._super();
+      this.set('errors', Ember.Validations.Errors.create());
+      if (this.get('validations') === undefined) {
+        this.set('validations', {});
+      }
+    },
+    validate: function(filter) {
+      var options, message, property, validator, toRun, value, index1, index2, valid = true, deferreds = [];
+      var object = this;
+      var canValidate = function(options, validator) {
+        if (typeof(options) === 'object') {
+          if (options['if']) {
+            if (typeof(options['if']) === 'function') {
+              return options['if'](object, validator);
+            } else if (typeof(options['if']) === 'string') {
+              if (typeof(object[options['if']]) === 'function') {
+                return object[options['if']]();
+              } else {
+                return object.get(options['if']);
+              }
+            }
+          } else if (options.unless) {
+            if (typeof(options.unless) === 'function') {
+              return !options.unless(object, validator);
+            } else if (typeof(options.unless) === 'string') {
+              if (typeof(object[options.unless]) === 'function') {
+                return !object[options.unless]();
+              } else {
+                return !object.get(options.unless);
+              }
+            }
+          } else {
+            return true;
+          }
+        } else {
+          return true;
+        }
+      };
+      if (filter !== undefined) {
+        toRun = [filter];
+      } else {
+        toRun = Object.keys(object.validations);
+      }
+      for(index1 = 0; index1 < toRun.length; index1++) {
+        property = toRun[index1];
+        this.errors.set(property, undefined);
+        delete this.errors[property];
+
+        for(validator in object.validations[property]) {
+          value = object.validations[property][validator];
+          if (typeof(value) !== 'object' || (typeof(value) === 'object' && value.constructor !== Array)) {
+            value = [value];
+          }
+
+          for(index2 = 0; index2 < value.length; index2++) {
+            if (canValidate(value[index2], validator)) {
+              var deferredObject = new Ember.Deferred();
+              deferreds = deferreds.concat(deferredObject);
+              if (!Ember.isNone(Ember.Validations.validators.local[validator])) {
+                Ember.Validations.validators.local[validator](object, property, value[index2], deferredObject);
+              } else if (!Ember.isNone(Ember.Validations.validators.remote[validator])) {
+                Ember.Validations.validators.remote[validator](object, property, value[index2], deferredObject);
+              }
+            }
+          }
+        }
+      }
+
+      return Ember.RSVP.all(deferreds).then(function() {
+        if (object.get('stateManager')) {
+          if (Object.keys(object.errors).length === 0) {
+            if (object.get('isDirty')) {
+              object.get('stateManager').transitionTo('uncommitted');
+            }
+          } else {
+            object.get('stateManager').transitionTo('invalid');
+          }
+        } else {
+          object.set('isValid', Object.keys(object.errors).length === 0);
+        }
+      });
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.patterns = Ember.Namespace.create({
+    numericality: /^(-|\+)?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?$/,
+    blank: /^\s*$/
+  });
+})();
+
+(function() {
+  Ember.Validations.validators        = Ember.Namespace.create();
+  Ember.Validations.validators.local  = Ember.Namespace.create();
+  Ember.Validations.validators.remote = Ember.Namespace.create();
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    absence: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      if (options === true) {
+        options = {};
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('present', options);
+      }
+
+      if (!Ember.Validations.Utilities.isBlank(model.get(property))) {
+        model.errors.add(property, options.message);
+      }
+
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    acceptance: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      if (options === true) {
+        options = {};
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('accepted', options);
+      }
+
+      if (options.accept) {
+        if (model.get(property) !== options.accept) {
+          model.errors.add(property, options.message);
+        }
+      } else if (model.get(property) !== '1' && model.get(property) !== 1 && model.get(property) !== true) {
+        model.errors.add(property, options.message);
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    confirmation: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      if (options === true) {
+        options = { attribute: property };
+        options = { message: Ember.Validations.messages.render('confirmation', options) };
+      }
+
+      if (model.get(property) !== model.get('' + property + 'Confirmation')) {
+        model.errors.add(property, options.message);
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    exclusion: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      var message, lower, upper;
+
+      if (options.constructor === Array) {
+        options = { 'in': options };
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('exclusion', options);
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        if (options.allowBlank === undefined) {
+          model.errors.add(property, options.message);
+        }
+      } else if (options['in']) {
+        if (Ember.$.inArray(model.get(property), options['in']) !== -1) {
+          model.errors.add(property, options.message);
+        }
+      } else if (options.range) {
+        lower = options.range[0];
+        upper = options.range[1];
+
+        if (model.get(property) >= lower && model.get(property) <= upper) {
+          model.errors.add(property, options.message);
+        }
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    format: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      var message;
+
+      if (options.constructor === RegExp) {
+        options = { 'with': options };
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('invalid', options);
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        if (options.allowBlank === undefined) {
+          model.errors.add(property, options.message);
+        }
+      } else if (options['with'] && !options['with'].test(model.get(property))) {
+        model.errors.add(property, options.message);
+      } else if (options.without && options.without.test(model.get(property))) {
+        model.errors.add(property, options.message);
+      }
+
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    inclusion: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      var message, lower, upper;
+
+      if (options.constructor === Array) {
+        options = { 'in': options };
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('inclusion', options);
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        if (options.allowBlank === undefined) {
+          model.errors.add(property, options.message);
+        }
+      } else if (options['in']) {
+        if (Ember.$.inArray(model.get(property), options['in']) === -1) {
+          model.errors.add(property, options.message);
+        }
+      } else if (options.range) {
+        lower = options.range[0];
+        upper = options.range[1];
+
+        if (model.get(property) < lower || model.get(property) > upper) {
+          model.errors.add(property, options.message);
+        }
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    length: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      var CHECKS, MESSAGES, allowBlankOptions, check, fn, message, operator, tokenizedLength, tokenizer, index, keys, key;
+
+      CHECKS = {
+        'is'      : '==',
+        'minimum' : '>=',
+        'maximum' : '<='
+      };
+
+      MESSAGES = {
+        'is'      : 'wrongLength',
+        'minimum' : 'tooShort',
+        'maximum' : 'tooLong'
+      };
+
+      if (typeof(options) === 'number') {
+        options = { 'is': options };
+      }
+
+      if (options.messages === undefined) {
+        options.messages = {};
+      }
+
+      keys = Object.keys(MESSAGES);
+      for (index = 0; index < keys.length; index++) {
+        key = keys[index];
+        if (options[key] !== undefined && options.messages[MESSAGES[key]] === undefined) {
+          if (Ember.$.inArray(key, Object.keys(CHECKS)) !== -1) {
+            options.count = options[key];
+          }
+          options.messages[MESSAGES[key]] = Ember.Validations.messages.render(MESSAGES[key], options);
+          if (options.count !== undefined) {
+            delete options.count;
+          }
+        }
+      }
+
+      tokenizer = options.tokenizer || 'split("")';
+      tokenizedLength = new Function('value', 'return value.' + tokenizer + '.length')(model.get(property) || '');
+
+      allowBlankOptions = {};
+      if (options.is) {
+        allowBlankOptions.message = options.messages.wrongLength;
+      } else if (options.minimum) {
+        allowBlankOptions.message = options.messages.tooShort;
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        if (options.allowBlank === undefined && (options.is || options.minimum)) {
+          model.errors.add(property, allowBlankOptions.message);
+        }
+      } else {
+        for (check in CHECKS) {
+          operator = CHECKS[check];
+          if (!options[check]) {
+            continue;
+          }
+
+          fn = new Function("return " + tokenizedLength + " " + operator + " " + options[check]);
+          if (!fn()) {
+            model.errors.add(property, options.messages[MESSAGES[check]]);
+          }
+        }
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    numericality: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      var CHECKS, check, checkValue, fn, form, operator, val, index, keys, key;
+
+      CHECKS = {
+        equalTo              :'===',
+        greaterThan          : '>',
+        greaterThanOrEqualTo : '>=',
+        lessThan             : '<',
+        lessThanOrEqualTo    : '<='
+      };
+
+      if (options === true) {
+        options = {};
+      }
+
+      if (options.messages === undefined) {
+        options.messages = { numericality: Ember.Validations.messages.render('notANumber', options) };
+      }
+
+      if (options.onlyInteger !== undefined && options.messages.onlyInteger === undefined) {
+        options.messages.onlyInteger = Ember.Validations.messages.render('notAnInteger', options);
+      }
+
+      keys = Object.keys(CHECKS).concat(['odd', 'even']);
+      for(index = 0; index < keys.length; index++) {
+        key = keys[index];
+        if (options[key] !== undefined && options.messages[key] === undefined) {
+          if (Ember.$.inArray(key, Object.keys(CHECKS)) !== -1) {
+            options.count = options[key];
+          }
+          options.messages[key] = Ember.Validations.messages.render(key, options);
+          if (options.count !== undefined) {
+            delete options.count;
+          }
+        }
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        if (options.allowBlank === undefined) {
+          model.errors.add(property, options.messages.numericality);
+        }
+      } else if (!Ember.Validations.patterns.numericality.test(model.get(property))) {
+        model.errors.add(property, options.messages.numericality);
+      } else if (options.onlyInteger === true && !(/^[+\-]?\d+$/.test(model.get(property)))) {
+        model.errors.add(property, options.messages.onlyInteger);
+      } else if (options.odd  && parseInt(model.get(property), 10) % 2 === 0) {
+        model.errors.add(property, options.messages.odd);
+      } else if (options.even && parseInt(model.get(property), 10) % 2 !== 0) {
+        model.errors.add(property, options.messages.even);
+      } else {
+
+        for (check in CHECKS) {
+          operator = CHECKS[check];
+
+          if (options[check] === undefined) {
+            continue;
+          }
+
+          if (!isNaN(parseFloat(options[check])) && isFinite(options[check])) {
+            checkValue = options[check];
+          } else if (model.get(options[check]) !== undefined) {
+            checkValue = model.get(options[check]);
+          } else {
+            deferredObject && deferredObject.resolve();
+            return;
+          }
+
+          fn = new Function('return ' + model.get(property) + ' ' + operator + ' ' + checkValue);
+
+          if (!fn()) {
+            model.errors.add(property, options.messages[check]);
+          }
+        }
+      }
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.validators.local.reopen({
+    presence: function(model, property, options, deferredObject) {
+      /*jshint expr:true*/
+      if (options === true) {
+        options = {};
+      }
+
+      if (options.message === undefined) {
+        options.message = Ember.Validations.messages.render('blank', options);
+      }
+
+      if (Ember.Validations.Utilities.isBlank(model.get(property))) {
+        model.errors.add(property, options.message);
+      }
+
+      deferredObject && deferredObject.resolve();
+    }
+  });
+})();
+
+(function() {
+  Ember.Validations.Utilities = {
+    isBlank: function(value) {
+      return value !== 0 && (!value || /^\s*$/.test(''+value));
+    }
+  };
+})();
 
 });require.register("vendor/ember.js", function(module, exports, require, global){
 // Version: v1.0.0-rc.6

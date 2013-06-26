@@ -18,8 +18,11 @@ var ApplicationRoute = Ember.Route.extend({
     },
 
     loginUser: function(user) {
+      console.log(user);
       this.controller.set('model', user);
+      this.controllerFor('session_login').set('token', user.get('access_token'));
       this.controllerFor('flash').set('model', { type: 'notice', message: 'You are now logged in!' });
+      this.transitionTo('apps');
     },
 
     logout: function() {
@@ -35,6 +38,7 @@ var ApplicationRoute = Ember.Route.extend({
       self.controller.set('model', null);
       this.controllerFor('session.login').clearToken();
       this.controllerFor('flash').set('model', { type: 'notice', message: 'You have logged out successfully!' });
+      this.transitionTo('session.login');
     }
   }
 });

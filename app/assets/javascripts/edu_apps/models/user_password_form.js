@@ -1,17 +1,13 @@
-var User = DS.Model.extend(Ember.Validations.Mixin, {
+var UserPasswordForm = Ember.Object.extend(Ember.Validations.Mixin, {
+  currentPassword: '',
+  newPassword: '',
+  newPasswordConfirmation: '',
 
-  // attributes
-  email:                DS.attr('string'),
-  access_token:         DS.attr('string'),
-  name:                 DS.attr('string'),
-  organization:         DS.attr('string'),
-  password:             DS.attr('string'),
-  passwordConfirmation: DS.attr('string'),
-
-  // validations
   validations: {
-    email: { format: /.+@.+\..{2,4}/ },
-    password: {
+    currentPassword: {
+      presence: true,
+    },
+    newPassword: {
       length: { minimum: 6 },
       confirmation: { message: 'must match the password confirmation field' }
     }
@@ -29,8 +25,6 @@ var User = DS.Model.extend(Ember.Validations.Mixin, {
     model.set('errors', Ember.Object.create(model.errors));
     console.log("Record was invalid because: " + model.get('errors'));
   }
-
 });
 
-module.exports = User;
-
+module.exports = UserPasswordForm;

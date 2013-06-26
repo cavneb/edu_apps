@@ -112,6 +112,29 @@ footer#footer {
   }
 }
 
+form {
+  .controls {
+    small.below {
+      display: none;
+    }
+    &.error {
+      small.below {
+        display: block;
+        width: 99%;
+        position: relative;
+        top: -15px;
+        padding: 2px 9px;
+        margin: 0 10px 0 -5px;
+        background-color: $errorBackground;
+        color: $errorText;
+      }
+    }
+  }
+}
+
+
+
+// Flash
 
 #flash-view {
   position: fixed;

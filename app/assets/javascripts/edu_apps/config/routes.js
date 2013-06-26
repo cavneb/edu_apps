@@ -39,4 +39,5 @@ App.Router.map(function() {
     });
   });
   this.route('profile');
+  this.route('change_password');
 });

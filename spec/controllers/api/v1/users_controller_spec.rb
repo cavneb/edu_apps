@@ -26,11 +26,21 @@ describe Api::V1::UsersController do
   end
 
   it "#create" do
-    post 'create', { user: { email: 'foo2@example.com', password: 'secret', password_confirmation: 'secret' }}
+    post 'create', { 
+      user: { 
+        email: 'foo2@example.com', 
+        password: 'secret', 
+        password_confirmation: 'secret',
+        name: 'Joe User',
+        organization: 'Instructure'
+      }
+    }
     json = JSON.parse(response.body)
     json['user']['email'].should == 'foo2@example.com'
     json['user']['access_token'].should be_present
     json['user']['id'].should be_present
+    json['user']['name'].should == 'Joe User'
+    json['user']['organization'].should == 'Instructure'
   end
 
   it "#update" do

@@ -3,7 +3,7 @@ class User < ActiveRecord::Base
   
   before_create :generate_access_token
   
-  validates :email, uniqueness: true
+  validates :email, uniqueness: true, format: { with: /.+@.+\..{2,4}/ }
 
   private
 

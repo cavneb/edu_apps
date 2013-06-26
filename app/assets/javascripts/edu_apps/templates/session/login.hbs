@@ -10,20 +10,15 @@
         <p>Do not have an account?<br>Then you can {{#linkTo 'session.register'}}register here{{/linkTo}}</p>
       </div>
       <div class="span4">
-        <form {{action login on="submit"}} class="session-form">
+        <form {{action "login" on="submit"}} class="session-form">
           <div class="controls">
             {{input type="email" value=email placeholder="Email Address"}}
           </div>
           <div class="controls">
             {{input type="password" value=password placeholder="Password"}}
           </div>
-          <div class="control-group">
-            <div class="controls">
-              <label class="checkbox pull-right">
-                <input type="checkbox"> Remember me
-              </label>
-              <button class="btn btn-primary" type="submit">Login</button>
-            </div>
+          <div class="controls">
+            <button class="btn btn-primary" type="submit">Login</button>
           </div>
         </form>
       </div>
