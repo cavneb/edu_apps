@@ -1,14 +1,14 @@
+var Membership = require('./membership');
+
 var User = DS.Model.extend(Ember.Validations.Mixin, {
 
   // attributes
   email:                   DS.attr('string'),
   access_token:            DS.attr('string'),
   name:                    DS.attr('string'),
-  organization_name:       DS.attr('string'),
   password:                DS.attr('string'),
   passwordConfirmation:    DS.attr('string'),
-  is_anonymous_tools_only: DS.attr('boolean'),
-  is_auto_approve_tools:   DS.attr('boolean'),
+  memberships:             DS.hasMany('Membership'),
 
   // validations
   validations: {
@@ -17,7 +17,7 @@ var User = DS.Model.extend(Ember.Validations.Mixin, {
       length: { minimum: 6 },
       confirmation: { message: 'must match the password confirmation field' }
     },
-    organization_name: {
+    name: {
       presence: true
     }
   },

@@ -1,7 +1,9 @@
+var UserPasswordForm = require('../models/user_password_form');
+
 var ChangePasswordController = Ember.ObjectController.extend({
 
   reset: function() {
-    this.set('model', new App.UserPasswordForm);
+    this.set('model', new UserPasswordForm);
   },
 
   submit: function() {

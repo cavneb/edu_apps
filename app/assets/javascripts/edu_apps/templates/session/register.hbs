@@ -10,7 +10,11 @@
         <p>Do you already have an account?<br>Then you can {{#linkTo 'session.login'}}login here{{/linkTo}}</p>
       </div>
       <div class="span4">
-        <form {{action "save" on="submit"}} class="session-form">
+        <form {{action "save" on="submit"}} class="chunky-form">
+          <div {{bindAttr class=":controls errors.name:error"}}>
+            {{input type="text" value=name placeholder="Full Name"}}
+            <small class="below">{{errors.name}}</small>
+          </div>
           <div {{bindAttr class=":controls errors.email:error"}}>
             {{input type="email" value=email placeholder="Email Address"}}
             <small class="below">{{errors.email}}</small>
@@ -22,14 +26,6 @@
           <div {{bindAttr class=":controls errors.passwordConfirmation:error"}}>
             {{input type="password" value=passwordConfirmation placeholder="Confirm Password"}}
             <small class="below">{{errors.passwordConfirmation}}</small>
-          </div>
-          <div {{bindAttr class=":controls errors.name:error"}}>
-            {{input type="text" value=name placeholder="Full Name"}}
-            <small class="below">{{errors.name}}</small>
-          </div>
-          <div {{bindAttr class=":controls errors.organization_name:error"}}>
-            {{input type="text" value=organization_name placeholder="Company/Organization"}}
-            <small class="below">{{errors.organization_name}}</small>
           </div>
           <div class="controls">
             <button class="btn btn-primary" type="submit">Register</button>

@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Api::V1::UsersController do
   before(:each) do
     session[:user_id] = nil
-    @user = User.create!(email: 'foo@example.com', password: 'secret', password_confirmation: 'secret')
+    @user = User.create!(name: 'Foo User', email: 'foo@example.com', password: 'secret', password_confirmation: 'secret')
   end
 
   describe "#index" do
@@ -28,6 +28,7 @@ describe Api::V1::UsersController do
   it "#create" do
     post 'create', { 
       user: { 
+        name: 'Foo Two',
         email: 'foo2@example.com', 
         password: 'secret', 
         password_confirmation: 'secret',

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20130626214508) do
+ActiveRecord::Schema.define(version: 20130627185606) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -49,23 +49,29 @@ ActiveRecord::Schema.define(version: 20130626214508) do
   add_index "lti_apps", ["short_name"], name: "index_lti_apps_on_short_name", unique: true, using: :btree
   add_index "lti_apps", ["user_id"], name: "index_lti_apps_on_user_id", using: :btree
 
-  create_table "organizations", force: true do |t|
-    t.string   "name",       null: false
+  create_table "memberships", force: true do |t|
+    t.integer  "organization_id", null: false
+    t.integer  "user_id",         null: false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.boolean  "is_admin"
+  end
+
+  create_table "organizations", force: true do |t|
+    t.string   "name",          null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "membership_id"
   end
 
   create_table "users", force: true do |t|
-    t.string   "email",                                   null: false
-    t.string   "password_digest",                         null: false
-    t.string   "access_token",                            null: false
-    t.string   "organization_name"
+    t.string   "email",           null: false
+    t.string   "password_digest", null: false
+    t.string   "access_token",    null: false
     t.string   "name"
-    t.boolean  "is_anonymous_tools_only", default: false
-    t.boolean  "is_auto_approve_tools",   default: true
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "organization_id"
+    t.integer  "membership_id"
   end
 
   add_index "users", ["access_token"], name: "index_users_on_access_token", unique: true, using: :btree

@@ -10,6 +10,12 @@ EduApps::Application.routes.draw do
           put 'update_password'
         end
       end
+      resources :organizations
+      resources :memberships, only: [:index, :destroy] do
+        collection do
+          post 'create_organization'
+        end
+      end
     end
   end
   

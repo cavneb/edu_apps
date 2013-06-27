@@ -17,17 +17,11 @@ module Api
       end
 
       def create
-        if Organization.where(name: user_params[:organization_name]).exists?
-          render json: { errors: { organization_name: 'already exists' }}, status: :unprocessable_entity
+        user = User.create(user_params)
+        if user.new_record?
+          render json: { errors: user.errors.messages }, status: :unprocessable_entity
         else
-          organization = Organization.create!(name: user_params[:organization_name])
-          user = organization.users.create(user_params)
-          if user.new_record?
-            organization.destroy
-            render json: { errors: user.errors.messages }, status: :unprocessable_entity
-          else
-            render json: user
-          end
+          render json: user
         end
       end
 
@@ -35,8 +29,7 @@ module Api
         user = current_user
         if user.update_attributes({
             email: user_params[:email],
-            name: user_params[:name],
-            organization: user_params[:organization]              
+            name: user_params[:name]            
           })
           render json: user
         else
@@ -63,7 +56,7 @@ module Api
       private
 
       def user_params
-        params.require(:user).permit(:email, :password, :password_confirmation, :name, :organization_name, :access_token, :is_anonymous_tools_only, :is_auto_approve_tools)
+        params.require(:user).permit(:email, :password, :password_confirmation, :name, :access_token)
       end
     end
 

@@ -13,7 +13,7 @@
             {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
             {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
             {{#if userLoggedIn}}
-              {{#view App.NavView}}{{#linkTo "profile"}}{{email}}{{/linkTo}}{{/view}}
+              {{#view App.NavView}}{{#linkTo "settings"}}Settings{{/linkTo}}{{/view}}
               <li><a href="#" {{action "logout" on="click"}}>Logout</a></li>
             {{else}}
               {{#view App.NavView}}{{#linkTo "session.login"}}Login{{/linkTo}}{{/view}}
@@ -28,8 +28,6 @@
 <div id="content">
   {{outlet}}
 </div>
-
-{{ render "debug" }}
 
 <footer id="footer">
   <p class="muted">

@@ -1,6 +1,8 @@
+var LtiApp = require('../../models/lti_app');
+
 var AppsShowRoute = Ember.Route.extend({
   model: function(params) {
-    return App.LtiApp.find(params.app_id);
+    return LtiApp.find(params.app_id);
   },
 
   serialize: function(model, params) {

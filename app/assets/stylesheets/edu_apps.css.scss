@@ -87,7 +87,7 @@ footer#footer {
 
 // Forms
 
-.session-form {
+.chunky-form {
   input[type="text"],
   input[type="email"],
   input[type="password"] {
@@ -129,9 +129,38 @@ form {
         color: $errorText;
       }
     }
+    .btn-aside {
+      position: relative;
+      top: -5px;
+      left: 10px;
+    }
   }
 }
 
+// Settings
+
+.settings-content {
+  background-color: #fff;
+  padding: 20px;
+
+  .settings-header {
+    margin-bottom: 15px;
+  }
+
+  .chunky-form {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      border: 2px solid #eee;
+      width: 98%;
+
+      &:focus {
+        border-color: #aaa;
+      }
+    }
+  }
+
+}
 
 
 // Flash

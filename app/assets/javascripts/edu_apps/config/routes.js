@@ -42,4 +42,10 @@ App.Router.map(function() {
   });
   this.route('profile');
   this.route('change_password');
+  this.resource('settings', function() {
+    this.route('profile');
+    this.route('account_settings');
+    this.route('organizations');
+    this.route('new_organization', { path: '/organizations/new' });
+  });
 });

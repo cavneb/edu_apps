@@ -12,9 +12,11 @@ module Api
       token = params[:access_token] || params[:user][:access_token] rescue nil
       user = User.find_by_access_token(token)
 
-      puts "session[:user_id] => #{session[:user_id]}"
-      puts "            token => #{token}"
-      puts "             user => #{user.to_s}"
+      if Rails.env =~ /dev/
+        puts "session[:user_id] => #{session[:user_id]}"
+        puts "            token => #{token}"
+        puts "             user => #{user.to_s}"
+      end
 
       if session[:user_id] && user && session[:user_id] == user.id
         return user

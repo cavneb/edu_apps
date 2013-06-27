@@ -1,3 +1,5 @@
+var User = require('../models/user');
+
 var SessionRoute = Ember.Route.extend({
 
   events: {
@@ -14,7 +16,7 @@ var SessionRoute = Ember.Route.extend({
           // user = App.Store.find(App.User, resp.user.id);
 
           // However, let's hack it for now
-          user = App.User.find(resp.user.access_token).then(function(results) {
+          user = User.find(resp.user.access_token).then(function(results) {
             self.send('loginUser', results);
           });
 

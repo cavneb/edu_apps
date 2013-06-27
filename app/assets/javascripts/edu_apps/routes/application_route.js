@@ -1,18 +1,23 @@
+var User           = require('../models/user');
+var Category       = require('../models/category');
+var EducationLevel = require('../models/education_level');
+var LtiApp         = require('../models/lti_app');
+
 var ApplicationRoute = Ember.Route.extend({
   model: function() {
     var token = this.controllerFor('session.login').get('token');
     if (token == undefined || token === 'null') {
       return null;
     } else {
-      return App.User.find(token);
+      return User.find(token);
     }
   },
 
   setupController: function(controller, currentUser) {
     controller.set('model', currentUser);
-    this.controllerFor('categories').set('model', App.Category.find());
-    this.controllerFor('education_levels').set('model', App.EducationLevel.find());
-    this.controllerFor('apps.index').set('model', App.LtiApp.find());
+    this.controllerFor('categories').set('model', Category.find());
+    this.controllerFor('education_levels').set('model', EducationLevel.find());
+    this.controllerFor('apps.index').set('model', LtiApp.find());
   },
 
   events: {
