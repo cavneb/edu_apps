@@ -1,14 +1,16 @@
-var Membership = require('./membership');
-
 var User = DS.Model.extend(Ember.Validations.Mixin, {
 
   // attributes
-  email:                   DS.attr('string'),
-  access_token:            DS.attr('string'),
-  name:                    DS.attr('string'),
-  password:                DS.attr('string'),
-  passwordConfirmation:    DS.attr('string'),
-  memberships:             DS.hasMany('Membership'),
+  email:                DS.attr('string'),
+  access_token:         DS.attr('string'),
+  name:                 DS.attr('string'),
+  password:             DS.attr('string'),
+  passwordConfirmation: DS.attr('string'),
+  memberships:          DS.hasMany('App.Membership'),
+
+  organizations: function() {
+    return this.get('memberships').getEach('organization');
+  }.property('memberships.@each.relationshipsLoaded'),
 
   // validations
   validations: {
@@ -21,7 +23,7 @@ var User = DS.Model.extend(Ember.Validations.Mixin, {
       presence: true
     }
   },
-
+  
   // callbacks
 
   becameError: function() {

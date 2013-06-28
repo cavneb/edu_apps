@@ -1,9 +1,9 @@
 var MembershipOrganizationForm = require('../../models/membership_organization_form');
 
-var SettingsNewOrganizationRoute = Ember.Route.extend({
+var SettingsOrganizationsNewRoute = Ember.Route.extend({
   model: function() {
     return new MembershipOrganizationForm;
   }
 });
 
-module.exports = SettingsNewOrganizationRoute;
+module.exports = SettingsOrganizationsNewRoute;

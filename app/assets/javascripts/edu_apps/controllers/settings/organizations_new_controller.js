@@ -1,11 +1,11 @@
-var SettingsNewOrganizationController = Ember.ObjectController.extend({
+var SettingsOrganizationsNewController = Ember.ObjectController.extend({
 
   save: function() {
     var self = this;
     form = this.get('model');
 
     var data = form.getProperties('name');
-    data.access_token = localStorage.token;
+    data.access_token = $.cookie("token");
 
     var request = $.ajax({
       type: 'POST',
@@ -15,6 +15,7 @@ var SettingsNewOrganizationController = Ember.ObjectController.extend({
 
     request.done(function( msg ) {
       self.send('showFlash', 'notice', 'Organization has been created successfully!');
+      self.send('reloadUser');
       self.get('target').transitionTo('settings.organizations');
     });
 
@@ -26,5 +27,5 @@ var SettingsNewOrganizationController = Ember.ObjectController.extend({
 
 });
 
-module.exports = SettingsNewOrganizationController;
+module.exports = SettingsOrganizationsNewController;
 

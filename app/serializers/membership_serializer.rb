@@ -1,11 +1,6 @@
 class MembershipSerializer < ActiveModel::Serializer
-  attributes :id, :is_admin, :organization_id, :organization_name
+  attributes :id, :is_admin
 
-  def organization_id
-    object.organization.id
-  end
-
-  def organization_name
-    object.organization.name
-  end
+  has_one :organization, embed: :id, include: true
+  has_one :user, embed: :id
 end

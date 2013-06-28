@@ -9,18 +9,11 @@ module Api
     end
 
     def current_user
-      token = params[:access_token] || params[:user][:access_token] rescue nil
-      user = User.find_by_access_token(token)
-
-      if Rails.env =~ /dev/
-        puts "session[:user_id] => #{session[:user_id]}"
-        puts "            token => #{token}"
-        puts "             user => #{user.to_s}"
-      end
-
-      if session[:user_id] && user && session[:user_id] == user.id
+      user = User.where(id: session[:user_id]).first
+      if user
         return user
       else
+        session[:user_id] = nil
         return nil
       end
     end

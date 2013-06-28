@@ -1,18 +1,16 @@
 <div class="settings-content">
   <div class="settings-header clearfix">
-    {{#linkTo 'settings.new_organization' classNames="pull-right"}}Add New Organization{{/linkTo}}  
+    <small>{{#linkTo 'settings.organizations_new' classNames="pull-right"}}Add New Organization{{/linkTo}}</small>
+    <h4>Organizations</h4>
   </div>
 
   <table class="table table-striped">
     <tbody>
       {{#each membership in controller}}
       <tr>
-        <td>{{membership.organization_name}}</td>
+        <td>{{#linkTo 'settings.organizations_show' membership}}{{membership.organization.name}}{{/linkTo}}</td>
         <td>
-          <a href="#" {{action "delete_membership" membership}} class="btn btn-mini pull-right">Leave</a>
-          {{#if membership.is_admin}}
-            <a href="#" class="btn btn-mini pull-right">Edit</a>
-          {{/if}}
+          <a href="#" {{action "deleteMembership" membership}} class="btn btn-mini pull-right">Leave</a>
         </td>
       </tr>
       {{/each}}

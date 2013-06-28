@@ -8,7 +8,12 @@ module Api
       end
 
       def show
-        user = User.where(access_token: params[:id]).first
+        uid = params[:id]
+        if uid =~ /^\d+$/
+          user = User.where(id: params[:id]).first
+        else
+          user = User.where(access_token: params[:id]).first
+        end
         if user
           render json: user
         else

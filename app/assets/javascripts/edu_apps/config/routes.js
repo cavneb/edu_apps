@@ -46,6 +46,7 @@ App.Router.map(function() {
     this.route('profile');
     this.route('account_settings');
     this.route('organizations');
-    this.route('new_organization', { path: '/organizations/new' });
+    this.route('organizations_new', { path: '/organizations/new' });
+    this.route('organizations_show', { path: '/organizations/:membership_id' });
   });
 });

@@ -15,7 +15,7 @@ var ChangePasswordController = Ember.ObjectController.extend({
     //   if (valid) {
 
         var data = form.getProperties('currentPassword', 'newPassword', 'newPasswordConfirmation');
-        data.access_token = localStorage.token; // TODO: Refactor
+        data.access_token = $.cookie("token");
 
         var request = $.ajax({
           type: 'PUT',

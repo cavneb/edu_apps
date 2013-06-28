@@ -37,6 +37,10 @@ $bg-grey: #eee;
       margin-top: 0px;
     }
   }
+  table.table th {
+    font-weight: normal;
+    color: rgb(202, 202, 202);
+  }
 }
 
 footer#footer {
@@ -101,7 +105,8 @@ footer#footer {
     padding: 8px;
   }
 
-  button {
+  button,
+  a.btn {
     box-shadow: none;
     -webkit-box-shadow: none;
     border: none;
@@ -109,10 +114,14 @@ footer#footer {
     font-weight: 300;
     font-size: 16px !important;
     padding: 8px 20px;
+    margin-right: 10px;
   }
 }
 
 form {
+  td input {
+    margin-bottom: 0px !important;
+  }
   .controls {
     small.below {
       display: none;
@@ -145,6 +154,9 @@ form {
 
   .settings-header {
     margin-bottom: 15px;
+    h4 {
+      margin: 0px;
+    }
   }
 
   .chunky-form {

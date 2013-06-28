@@ -1,4 +1,9 @@
 <div class="settings-content">
+  <div class="settings-header clearfix">
+    <small>{{#linkTo 'settings.organizations' classNames="pull-right"}}&laquo; Back to List{{/linkTo}}</small>
+    <h4>Add New Organization</h4>
+  </div>
+
   <form {{action save on="submit"}} class="chunky-form">
     <div {{bindAttr class=":controls errors.name:error"}}>
       <label>Name</label>
@@ -8,7 +13,7 @@
     <div class="control-group">
       <div class="controls">
         <button class="btn btn-primary" type="submit">Create Organization</button>
-        {{#linkTo 'settings.organizations' classNames="btn-aside"}}Cancel{{/linkTo}}
+        {{#linkTo 'settings.organizations' classNames="btn btn-secondary"}}Cancel{{/linkTo}}
       </div>
     </div>
   </form>

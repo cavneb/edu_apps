@@ -25,12 +25,25 @@ var ApplicationRoute = Ember.Route.extend({
       this.controllerFor('flash').set('model', { type: type, message: message });
     },
 
+    reloadUser: function() {
+      console.log("Reloading user");
+      this.controller.get('model').reload();
+    },
+
     loginUser: function(user) {
-      console.log(user);
       this.controller.set('model', user);
-      this.controllerFor('session_login').set('token', user.get('access_token'));
+      var loginController = this.controllerFor('session.login');
+      loginController.set('token', user.get('access_token'));
       this.controllerFor('flash').set('model', { type: 'notice', message: 'You are now logged in!' });
-      this.transitionTo('apps');
+
+      var attemptedTransition = loginController.get('attemptedTransition');
+
+      if (attemptedTransition) {
+        attemptedTransition.retry();
+        loginController.set('attemptedTransition', null);
+      } else {
+        self.transitionToRoute('apps');
+      }
     },
 
     logout: function() {

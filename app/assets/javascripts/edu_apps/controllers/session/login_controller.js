@@ -1,21 +1,19 @@
 var SessionLoginController = Ember.Controller.extend({
 
   clearToken: function() {
-    localStorage.removeItem('token');
-    this.set('token', null);
+    $.removeCookie("token");
   },
 
   reset: function() {
     this.setProperties({ email: '', password: '' });
   },
 
-  token: localStorage.token,
+  token: $.cookie("token"),
   
   tokenChanged: function() {
-    localStorage.token = this.get('token');
+    $.cookie("token", this.get('token'), { expires: 1 })
   }.observes('token')
 
 });
 
 module.exports = SessionLoginController;
-

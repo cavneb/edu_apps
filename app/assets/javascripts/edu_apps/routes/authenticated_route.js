@@ -8,7 +8,7 @@ var AuthenticatedRoute = Ember.Route.extend({
   },
 
   redirectToLogin: function(transition) {
-    this.send('showFlash', 'notice', 'You must log in first');
+    this.controllerFor('flash').set('model', { type: 'notice', message: 'You must log in first' });
 
     var loginController = this.controllerFor('session.login');
     loginController.set('attemptedTransition', transition);
@@ -20,8 +20,7 @@ var AuthenticatedRoute = Ember.Route.extend({
       if (reason.status === 401) {
         this.redirectToLogin(transition);
       } else {
-        console.log(reason.status);
-        alert('Something went wrong');
+        this.redirectToLogin(transition);
       }
     }
   }
