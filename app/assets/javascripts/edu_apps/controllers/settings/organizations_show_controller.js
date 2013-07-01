@@ -16,12 +16,13 @@ var SettingsOrganizationsShowController = Ember.ObjectController.extend({
       });
 
       request.done(function( msg ) {
-        self.send('showFlash', 'notice', 'Added ' + data.get('email') + ' successfully');
+        self.set('newMemberEmail', null);
+        self.set('newMemberIsAdmin', null);
+        self.send('showFlash', 'notice', 'Added ' + data.email + ' successfully');
         self.send('refresh');
       });
 
       request.fail(function(jqXHR, textStatus) {
-        debugger;
         self.send('showFlash', 'error', 'Unable to find membership record in organization');
       });
 
@@ -36,8 +37,7 @@ var SettingsOrganizationsShowController = Ember.ObjectController.extend({
 
       var request = $.ajax({
         type: 'DELETE',
-        url: '/api/v1/memberships/' + membership.get('id'),
-        data: { access_token: $.cookie("token") }
+        url: '/api/v1/memberships/' + membership.get('id')
       });
 
       request.done(function( msg ) {

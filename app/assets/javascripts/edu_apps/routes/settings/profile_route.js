@@ -2,7 +2,7 @@ var AuthenticatedRoute = require('../authenticated_route');
 
 var SettingsProfileRoute = AuthenticatedRoute.extend({
   model: function() {
-    return this.modelFor('application');
+    return this.controllerFor('application').get('model');
   }
 });
 

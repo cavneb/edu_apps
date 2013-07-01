@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20130627185606) do
+ActiveRecord::Schema.define(version: 20130701172432) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,10 +21,24 @@ ActiveRecord::Schema.define(version: 20130627185606) do
     t.string "short_name"
   end
 
+  create_table "categories_lti_apps", force: true do |t|
+    t.integer "category_id"
+    t.integer "lti_app_id"
+  end
+
+  add_index "categories_lti_apps", ["category_id", "lti_app_id"], name: "index_categories_lti_apps_on_category_id_and_lti_app_id", unique: true, using: :btree
+
   create_table "education_levels", force: true do |t|
     t.string "name"
     t.string "short_name"
   end
+
+  create_table "education_levels_lti_apps", force: true do |t|
+    t.integer "education_level_id"
+    t.integer "lti_app_id"
+  end
+
+  add_index "education_levels_lti_apps", ["education_level_id", "lti_app_id"], name: "index_edu_level_lti_apps", unique: true, using: :btree
 
   create_table "lti_apps", force: true do |t|
     t.integer  "user_id",                                               null: false
@@ -44,6 +58,10 @@ ActiveRecord::Schema.define(version: 20130627185606) do
     t.json     "cartridge"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "banner_image_url",     limit: 1000
+    t.string   "logo_image_url",       limit: 1000
+    t.string   "icon_image_url",       limit: 1000
+    t.string   "short_description"
   end
 
   add_index "lti_apps", ["short_name"], name: "index_lti_apps_on_short_name", unique: true, using: :btree

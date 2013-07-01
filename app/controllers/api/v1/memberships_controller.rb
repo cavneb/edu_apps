@@ -30,18 +30,26 @@ module Api
 
       def destroy
         user = current_user
-        membership = user.memberships.find(params[:id])
-        organization = membership.organization
-        if membership && membership.destroy
-          
-          # Delete the organization if it's not associated with anyone
-          if organization.memberships.empty?
-            organization.destroy
-          end
+        target_membership = Membership.find(params[:id])
 
-          render json: {}, status: :ok
+        # Determine if current user is admin of this organization
+        user_membership = user.memberships.where(organization_id: target_membership.organization_id).first
+        if user_membership && user_membership.is_admin?
+
+          organization = target_membership.try(:organization)
+          if target_membership && target_membership.destroy
+            
+            # Delete the organization if it's not associated with anyone
+            if organization.memberships.empty?
+              organization.destroy
+            end
+
+            render json: {}, status: :ok
+          else
+            render json: {}, status: :unprocessable_entity
+          end
         else
-          render json: {}, status: :unprocessable_entity
+          render json: { message: "You do not have permissions to do this" }, status: :unprocessable_entity
         end
       end
 

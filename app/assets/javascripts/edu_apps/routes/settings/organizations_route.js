@@ -4,7 +4,7 @@ var AuthenticatedRoute = require('../authenticated_route');
 var SettingsOrganizationsRoute = AuthenticatedRoute.extend({
   
   model: function() {
-    user = this.modelFor('application');
+    user = this.controllerFor('application').get('model');
     return user.get('memberships');
   }
 

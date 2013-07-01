@@ -6,6 +6,7 @@ require('../vendor/jquery.cookie');
 require('../vendor/handlebars');
 require('../vendor/ember');
 require('../vendor/ember-data');
+require('../vendor/ember-model');
 require('../vendor/ember-validations');
 
 Ember.TESTING_DEPRECATION = true;
@@ -190,7 +191,6 @@ var FlashController = Ember.ObjectController.extend({
   content: null,
 
   hide: function() {
-    console.log("hiding...");
     $('#flash-view').css({
       top: "85px"
     }).animate({
@@ -207,7 +207,7 @@ var FlashController = Ember.ObjectController.extend({
         opacity: "toggle",
         top: "+=135px"
       }, 500);
-      setTimeout(this.hide, 4000);
+      setTimeout(this.hide, 2000);
     }
   }.observes('content')
 
@@ -266,22 +266,13 @@ var SessionRegisterController = Ember.ObjectController.extend({
     var self = this;
     var user = this.get('model');
 
-
     user.on('didCreate', function() {
+      debugger;
       self.get('target').send('loginUser', user);
       self.get('target').transitionTo('apps');
     });
     
-    debugger;
     this.get('store').commit();
-
-    // Validation will occur both on the initial validate() and the server-side
-    // user.validate().then(function() {
-    //   valid = user.get('isValid');
-    //   if (valid) {
-        // self.get('store').commit();
-    //   }
-    // });
   }
 
 });
@@ -414,12 +405,13 @@ var SettingsOrganizationsShowController = Ember.ObjectController.extend({
       });
 
       request.done(function( msg ) {
-        self.send('showFlash', 'notice', 'Added ' + data.get('email') + ' successfully');
+        self.set('newMemberEmail', null);
+        self.set('newMemberIsAdmin', null);
+        self.send('showFlash', 'notice', 'Added ' + data.email + ' successfully');
         self.send('refresh');
       });
 
       request.fail(function(jqXHR, textStatus) {
-        debugger;
         self.send('showFlash', 'error', 'Unable to find membership record in organization');
       });
 
@@ -434,8 +426,7 @@ var SettingsOrganizationsShowController = Ember.ObjectController.extend({
 
       var request = $.ajax({
         type: 'DELETE',
-        url: '/api/v1/memberships/' + membership.get('id'),
-        data: { access_token: $.cookie("token") }
+        url: '/api/v1/memberships/' + membership.get('id')
       });
 
       request.done(function( msg ) {
@@ -531,41 +522,68 @@ module.exports = App;
 
 
 });require.register("models/category.js", function(module, exports, require, global){
-var Category = DS.Model.extend({
-  name:       DS.attr('string'),
-  short_name: DS.attr('string')
+var Category = Ember.Model.extend({
+  name:       Ember.attr(),
+  short_name: Ember.attr()
 });
+
+Category.adapter = Ember.RESTAdapter.create();
+Category.url = "api/v1/categories";
+Category.rootKey = 'category';
+Category.collectionKey = 'categories';
 
 module.exports = Category;
 
 
 });require.register("models/education_level.js", function(module, exports, require, global){
-var EducationLevel = DS.Model.extend({
-  name:       DS.attr('string'),
-  short_name: DS.attr('string')
+var EducationLevel = Ember.Model.extend({
+  name:       Ember.attr(),
+  short_name: Ember.attr()
 });
+
+EducationLevel.adapter = Ember.RESTAdapter.create();
+EducationLevel.url = "api/v1/education_levels";
+EducationLevel.rootKey = 'education_level';
+EducationLevel.collectionKey = 'education_levels';
 
 module.exports = EducationLevel;
 
 
 });require.register("models/lti_app.js", function(module, exports, require, global){
-var LtiApp = DS.Model.extend({
+var LtiApp = Ember.Model.extend({
+  name:                 Ember.attr(),
+  short_name:           Ember.attr(),
+  short_description:    Ember.attr(),
+  description:          Ember.attr(),
+  testing_instructions: Ember.attr(),
+  author_name:          Ember.attr(),
+  app_type:             Ember.attr(),
+  ims_cert_url:         Ember.attr(),
+  banner_image_url:     Ember.attr(),
+  logo_image_url:       Ember.attr(),
+  icon_image_url:       Ember.attr(),
+  created_at:           Ember.attr(),
+  updated_at:           Ember.attr(),
+  cartridge:            Ember.attr(),
 
-  // attributes
-  name:                 DS.attr('string'),
-  short_name:           DS.attr('string'),
-  description:          DS.attr('string'),
-  testing_instructions: DS.attr('string'),
-  author_name:          DS.attr('string'),
-  app_type:             DS.attr('string'),
-  ims_cert_url:         DS.attr('string'),
-  created_at:           DS.attr('date'),
-  updated_at:           DS.attr('date')
-
+  // This is very messy and should be refactored
+  extensions: function() {
+    var results = [];
+    this.get('cartridge.extensions').getEach('property').forEach(function(lst) {
+      $.each(lst, function(idx, item) { 
+        results.push(item);
+      });
+    });
+    return results;
+  }.property('cartridge.extensions.@each')
 });
 
-module.exports = LtiApp;
+LtiApp.adapter = Ember.RESTAdapter.create();
+LtiApp.url = 'api/v1/lti_apps';
+LtiApp.rootKey = 'lti_app';
+LtiApp.collectionKey = 'lti_apps';
 
+module.exports = LtiApp;
 
 });require.register("models/membership.js", function(module, exports, require, global){
 var Membership = DS.Model.extend({
@@ -609,6 +627,10 @@ module.exports = MembershipOrganizationForm;
 var Organization = DS.Model.extend({
   name: DS.attr('string'),
   memberships: DS.hasMany('App.Membership'),
+
+  userCount: function() {
+    return this.get('memberships').get('length');
+  }.property('memberships.@each'),
 
   users: function() {
     return this.get('memberships').getEach('user');
@@ -717,6 +739,7 @@ var ApplicationRoute = Ember.Route.extend({
     this.controllerFor('categories').set('model', Category.find());
     this.controllerFor('education_levels').set('model', EducationLevel.find());
     this.controllerFor('apps.index').set('model', LtiApp.find());
+    window.APPS = this.controllerFor('apps.index').get('model');
   },
 
   events: {
@@ -741,7 +764,7 @@ var ApplicationRoute = Ember.Route.extend({
         attemptedTransition.retry();
         loginController.set('attemptedTransition', null);
       } else {
-        self.transitionToRoute('apps');
+        this.transitionTo('apps');
       }
     },
 
@@ -795,6 +818,7 @@ var AuthenticatedRoute = Ember.Route.extend({
 
   beforeModel: function(transition) {
     var token = this.controllerFor('session.login').get('token');
+    console.log("TOKEN: " + token);
     if (!token || token === 'undefined' || token === undefined || token === 'null' || token === null) {
       this.redirectToLogin(transition);
     }
@@ -972,7 +996,7 @@ var AuthenticatedRoute = require('../authenticated_route');
 var SettingsOrganizationsRoute = AuthenticatedRoute.extend({
   
   model: function() {
-    user = this.modelFor('application');
+    user = this.controllerFor('application').get('model');
     return user.get('memberships');
   }
 
@@ -1011,7 +1035,7 @@ var AuthenticatedRoute = require('../authenticated_route');
 
 var SettingsProfileRoute = AuthenticatedRoute.extend({
   model: function() {
-    return this.modelFor('application');
+    return this.controllerFor('application').get('model');
   }
 });
 
@@ -1128,7 +1152,7 @@ function program16(depth0,data) {
 function program17(depth0,data) {
   
   
-  data.buffer.push("Retrieving_a Review<div class=\"arrow-down\"></div>");
+  data.buffer.push("Retrieving a Review<div class=\"arrow-down\"></div>");
   }
 
   data.buffer.push("<div class=\"row\">\n  <div class=\"span3\">\n    <div data-spy=\"affix\" data-offset-top=\"0\">\n      <ul class=\"nav nav-list\">\n        ");
@@ -1307,7 +1331,7 @@ function program20(depth0,data) {
   },inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "index", options) : helperMissing.call(depth0, "linkTo", "index", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
-  data.buffer.push("\n\n          <ul class=\"nav nav-pills pull-right\">\n            ");
+  data.buffer.push("\n\n          <ul class=\"nav nav-pills\" style=\"margin-left: 208px; width: -webkit-fit-content; width: -moz-fit-content; width: fit-content;\">\n            ");
   hashTypes = {};
   hashContexts = {};
   stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(3, program3, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
@@ -1327,7 +1351,7 @@ function program20(depth0,data) {
   hashContexts = {};
   stack2 = helpers.view.call(depth0, "App.NavView", {hash:{},inverse:self.noop,fn:self.program(12, program12, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
-  data.buffer.push("\n            ");
+  data.buffer.push("\n          </ul>\n\n          <ul class=\"nav nav-pills pull-right\">\n            ");
   hashTypes = {};
   hashContexts = {};
   stack2 = helpers['if'].call(depth0, "userLoggedIn", {hash:{},inverse:self.program(18, program18, data),fn:self.program(14, program14, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
@@ -2143,7 +2167,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Configuring Apps in Blackboard Learn</h2>\n\n  <div class=\"flex-video\">\n    <iframe width=\"640\" height=\"480\" src=\"http://www.youtube.com/embed/Qh_X3J8VADE\" frameborder=\"0\" allowfullscreen></iframe>\n  </div>\n\n  <iframe src=\"http://library.blackboard.com/ref/df5b20ed-ce8d-4428-a595-a0091b23dda3/Content/_admin_app_system/admin_app_basic_lti_tool_providers.htm\" \n  class=\"span12\" height=\"2200\" frameborder=\"0\"></iframe>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Configuring Apps in Blackboard Learn</h2>\n\n  <p>The <a href=\"http://library.blackboard.com/ref/df5b20ed-ce8d-4428-a595-a0091b23dda3/Content/_admin_app_system/admin_app_basic_lti_tool_providers.htm\" target=\"_blank\">following page</a> explains how to set up external apps in Blackboard Learn.</p>\n\n  <div class=\"row\">\n    <iframe src=\"http://library.blackboard.com/ref/df5b20ed-ce8d-4428-a595-a0091b23dda3/Content/_admin_app_system/admin_app_basic_lti_tool_providers.htm\" \nclass=\"span12\" height=\"1700\" style=\"margin: 0px !important;\" frameborder=\"0\"></iframe>\n\n    <div style=\"padding: 50px;\">\n      <iframe width=\"840\" height=\"630\" src=\"http://www.youtube.com/embed/Qh_X3J8VADE\" frameborder=\"0\" allowfullscreen></iframe>\n    </div>\n  </div>\n</section>");
   
 });
 
@@ -2153,7 +2177,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Configuring Apps in Canvas</h2>\n\n  <img src=\"/images/tool_config.png\" />\n\n  <p>LTI app configuration in Canvas can happen on the course or account. Click the \"Settings\" link in the left sidebar of the course or account where you want to add the app. Click the \"External Tools\" tab and click \"Add External Tool\".</p>\n\n  <p>Enter the name, consumer key and shared secret for the app (for these demo apps you can put any key and secret that you like). For \"configuration type\" select \"By URL\" and paste in the full URL of the link configuration (copy the URL from one of the links below).</p>\n\n  <p>After the app is saved you should see it appear as configured in the course our account content. Depending on the integration type, the app may appear different places, but most apps will appear under \"External Tools\" when adding items to a module.</p>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Configuring Apps in Canvas</h2>\n\n  <img src=\"/assets/tool_config.png\" style=\"float: left; margin: 0 20px 20px 0;\" />\n  \n  <p>LTI app configuration in Canvas can happen on the course or account. Click the \"Settings\" link in the left sidebar of the course or account where you want to add the app. Click the \"External Tools\" tab and click \"Add External Tool\".</p>\n\n  <p>Enter the name, consumer key and shared secret for the app (for these demo apps you can put any key and secret that you like). For \"configuration type\" select \"By URL\" and paste in the full URL of the link configuration (copy the URL from one of the links below).</p>\n\n  <p>After the app is saved you should see it appear as configured in the course our account content. Depending on the integration type, the app may appear different places, but most apps will appear under \"External Tools\" when adding items to a module.</p>    \n</section>");
   
 });
 
@@ -2163,7 +2187,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Configuring Apps in Desire2Learn</h2>\n\n  <p>Desire2Learn added support for LTI apps in version 8.4. To get at their configuration docs you'll need to log in to <a href=\"https://community.desire2learn.com/enroll.asp\">the Desire2Learn community</a>, then click Documentation => 10.1 => Learning Environment => LTI.</p>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Configuring Apps in Desire2Learn</h2>\n\n  <p>Desire2Learn added support for LTI apps in version 8.4.</p>\n\n  <p>To get at their configuration docs you'll need to log in to <a href=\"https://community.desire2learn.com/enroll.asp\">the Desire2Learn community</a>, then click Documentation => 10.1 => Learning Environment => LTI.</p>\n</section>");
   
 });
 
@@ -2173,7 +2197,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Configuring Apps in Moodle</h2>\n  <p>Moodle added support for LTI apps in version 2.2. The following page explains how to set up external apps in Moodle.</p>\n\n  <iframe src=\"http://docs.moodle.org/22/en/External_tool_settings\" frameborder=\"0\" class=\"span12\" height=\"3000\" style=\"margin-bottom: 100px;\"></iframe>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Configuring Apps in Moodle</h2>\n\n  <p>Moodle added support for LTI apps in version 2.2. The <a href=\"http://docs.moodle.org/22/en/External_tool_settings\" target=\"_blank\">following page</a> explains how to set up external apps in Moodle.</p>\n\n  <div class=\"row\">\n    <iframe src=\"http://docs.moodle.org/22/en/External_tool_settings\" frameborder=\"0\" class=\"span12\" height=\"3000\" style=\"width: 900px; margin: 0 0 100px 25px;\"></iframe>\n  </div>\n  \n</section>");
   
 });
 
@@ -2183,7 +2207,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Configuring Apps in Sakai</h2>\n\n  <p>Sakai is LTI compatible, and has been since version 2.5. <a href=\"http://www.edugarage.com/download/attachments/75071496/2010-06-15-blti.pdf\">This document</a> has some resources around LTI, including the following directions for trying out LTI in Sakai:</p>\n\n  <ul style=\"margin-left: 25px;\">\n    <li><a href=\"http://nightly2.sakaiproject.org:8085/portal\">http://nightly2.sakaiproject.org:8085/portal</a></li>\n    <li>Make an account – Include full name and E-Mail</li>\n    <li>Make a site, Add Basic LTI, Configure the BLTI Tool</li>\n    <li>http://wiscrowd.appspot.com/wiscrowd</li>\n    <li>Key = 12345 / secret</li>\n  </ul>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Configuring Apps in Sakai</h2>\n\n  <p>Sakai is LTI compatible, and has been since version 2.5. <a href=\"http://www.sakaiproject.org/projects/lti-portlet\">Here</a> are some resources on using LTI with Sakai.</p>\n\n  <ul style=\"margin-left: 25px;\">\n    <li><a href=\"http://nightly2.sakaiproject.org:8085/portal\">http://nightly2.sakaiproject.org:8085/portal</a></li>\n    <li>Make an account – Include full name and E-Mail</li>\n    <li>Make a site, Add Basic LTI, Configure the BLTI Tool</li>\n    <li>http://wiscrowd.appspot.com/wiscrowd</li>\n    <li>Key = 12345 / secret</li>\n  </ul>\n</section>");
   
 });
 
@@ -2281,7 +2305,11 @@ function program3(depth0,data) {
   options = {hash:{},inverse:self.noop,fn:self.program(4, program4, data),contexts:[depth0,depth0],types:["STRING","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
   stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "settings.organizations_show", "membership", options) : helperMissing.call(depth0, "linkTo", "settings.organizations_show", "membership", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
-  data.buffer.push("</td>\n        <td>\n          <a href=\"#\" ");
+  data.buffer.push("</td>\n        <td>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "membership.organization.userCount", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" members</td>\n        <td>\n          <a href=\"#\" ");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers.action.call(depth0, "deleteMembership", "membership", {hash:{},contexts:[depth0,depth0],types:["STRING","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
@@ -2296,6 +2324,12 @@ function program4(depth0,data) {
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "membership.organization.name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
   }
 
+function program6(depth0,data) {
+  
+  
+  data.buffer.push("\n      <tr>\n        <td>You are not a member of any organizations yet. You can either create an organization or be invited to one.</td>\n      </tr>\n      ");
+  }
+
   data.buffer.push("<div class=\"settings-content\">\n  <div class=\"settings-header clearfix\">\n    <small>");
   hashContexts = {'classNames': depth0};
   hashTypes = {'classNames': "STRING"};
@@ -2307,7 +2341,7 @@ function program4(depth0,data) {
   data.buffer.push("</small>\n    <h4>Organizations</h4>\n  </div>\n\n  <table class=\"table table-striped\">\n    <tbody>\n      ");
   hashTypes = {};
   hashContexts = {};
-  stack2 = helpers.each.call(depth0, "membership", "in", "controller", {hash:{},inverse:self.noop,fn:self.program(3, program3, data),contexts:[depth0,depth0,depth0],types:["ID","ID","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack2 = helpers.each.call(depth0, "membership", "in", "controller", {hash:{},inverse:self.program(6, program6, data),fn:self.program(3, program3, data),contexts:[depth0,depth0,depth0],types:["ID","ID","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
   data.buffer.push("\n    </tbody>\n  </table>\n</div>");
   return buffer;
@@ -2397,7 +2431,7 @@ function program3(depth0,data) {
   data.buffer.push(escapeExpression(helpers.action.call(depth0, "addMember", "organization", {hash:{
     'on': ("submit")
   },contexts:[depth0,depth0],types:["STRING","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push(" class=\"well\">\n      <table class=\"table table-striped\">\n        <thead>\n          <tr>\n            <th>Name</th>\n            <th>Email</th>\n            <th>Admin?</th>\n            <th>&nbsp;</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td>");
+  data.buffer.push(" class=\"well\">\n      <table class=\"table table-striped\">\n        <thead>\n          <tr>\n            <th>Name</th>\n            <th>Email</th>\n            <th>Admin?</th>\n            <th>&nbsp;</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td colspan=\"2\">");
   hashContexts = {'type': depth0,'value': depth0,'placeholder': depth0,'classNames': depth0};
   hashTypes = {'type': "STRING",'value': "ID",'placeholder': "STRING",'classNames': "STRING"};
   options = {hash:{
@@ -2685,7 +2719,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Canvas Homework Submission</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to turn in homework through an LTI launch. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.homework_submission_tools.html\">more information</a>.\n  </p>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Canvas Homework Submission</h2>\n\n  <p>\n    In Canvas you can configure an LTI tool to turn in homework through an LTI launch. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.homework_submission_tools.html\">more information</a>.\n  </p>\n</section>");
   
 });
 
@@ -2695,7 +2729,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Canvas Link Selection Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to select LTI launch URLs as module items. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.link_selection_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Links in Modules Demo</h3>\n        <p>\n            This app allows the user to pick and insert custom content as link\n            in course modules. When inserting content into a module, if the\n            user\n            picks \"External Tools\" they'll see the configured app with a\n            \"find\"\n            icon. Clicking the app will bring up a new dialog where the user\n            can pick/build content (in this case creating a page that shows an\n            image of a fish with a user-specified name for the fish)\n            to be inserted as a page or resource within\n            the current module.\n        </p>\n        <p>\n            Module linking apps can be configured at the course or account\n            level.\n            If the app is configured at the account level,\n            then it will be available for any courses within that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/link_selection_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/resource_selection_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Canvas Link Selection Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to select LTI launch URLs as module items. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.link_selection_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Links in Modules Demo</h3>\n        <p>\n            This app allows the user to pick and insert custom content as link\n            in course modules. When inserting content into a module, if the\n            user\n            picks \"External Tools\" they'll see the configured app with a\n            \"find\"\n            icon. Clicking the app will bring up a new dialog where the user\n            can pick/build content (in this case creating a page that shows an\n            image of a fish with a user-specified name for the fish)\n            to be inserted as a page or resource within\n            the current module.\n        </p>\n        <p>\n            Module linking apps can be configured at the course or account\n            level.\n            If the app is configured at the account level,\n            then it will be available for any courses within that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/link_selection_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/assets/resource_selection_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
   
 });
 
@@ -2705,7 +2739,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Canvas Navigation Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to have a link in the navigation for a course, account, or user.See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Course Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          course navigation. This link is available to anyone with access to\n          the course. If it's configured at the account level, the link will\n          be added to all courses within that account. Permissions can be set\n          to determine which user types have access to the app, and whether\n          the app is enabled by default for all applicable courses, or if\n          it needs to be configured manually for each course.\n      </p>\n      <a class=\"label label-info\" href=\"/config/course_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#course_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/course_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Account Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          account navigation. This link is available to anyone with access to\n          the account. The link will appear in the current account and any\n          sub-accounts of that account. Remember that app launches will send\n          all role types associated with a user, which in the case of\n          account-level links should always include at least the admin role,\n          <code>urn:lti:instrole:ims/lis/Administrator</code>.\n      </p>\n      <a class=\"label label-info\" href=\"/config/account_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>User Navigation Demo</h3>\n        <p>\n            This is an example of a standard configuration for adding a link\n            to\n            user navigation. This link is available to anyone with access to\n            the institution, and will appear as a navigation item whey they\n            click their profile or user information link.\n        </p>\n      <a class=\"label label-info\" href=\"/config/user_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#user_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/user_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Canvas Navigation Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to have a link in the navigation for a course, account, or user.See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Course Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          course navigation. This link is available to anyone with access to\n          the course. If it's configured at the account level, the link will\n          be added to all courses within that account. Permissions can be set\n          to determine which user types have access to the app, and whether\n          the app is enabled by default for all applicable courses, or if\n          it needs to be configured manually for each course.\n      </p>\n      <a class=\"label label-info\" href=\"/config/course_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#course_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/assets/course_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Account Navigation Demo</h3>\n      <p>\n          This is an example of a standard configuration for adding a link to\n          account navigation. This link is available to anyone with access to\n          the account. The link will appear in the current account and any\n          sub-accounts of that account. Remember that app launches will send\n          all role types associated with a user, which in the case of\n          account-level links should always include at least the admin role,\n          <code>urn:lti:instrole:ims/lis/Administrator</code>.\n      </p>\n      <a class=\"label label-info\" href=\"/config/account_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#account_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>User Navigation Demo</h3>\n        <p>\n            This is an example of a standard configuration for adding a link\n            to\n            user navigation. This link is available to anyone with access to\n            the institution, and will appear as a navigation item whey they\n            click their profile or user information link.\n        </p>\n      <a class=\"label label-info\" href=\"/config/user_navigation.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/navigation_tools.html#user_navigation\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/assets/user_navigation_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n</section>");
   
 });
 
@@ -2715,7 +2749,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Canvas WYSIWYG Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to add content to a rich content editor. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.editor_button_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Editor button extensions show up in\n            Canvas\n            as icons in the right editor, in this case as a fish icon.\n            This simple demo app lets the user pick from a list of fish\n            pictures. The picture they choose will be inserted into the\n            rich editor.</p>\n        <p>\n            Editor button apps can be configured at the course or account\n            levels. If the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/editor_button_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Another Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Clicking the new kitten icon will pop up\n            a dialog\n            that uses placekitten.com to generate an image of a kitten set\n            to the user's specified dimensions.\n        </p>\n        <p>\n            Again, if the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button2.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/examples/kitten_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Canvas WYSIWYG Examples</h2>\n\n  <h3>Introduction</h3>\n  <p>\n    In Canvas you can configure an LTI tool to add content to a rich content editor. See Canvas documentation for more details <a href=\"https://canvas.instructure.com/doc/api/file.editor_button_tools.html\">more information</a>.\n  </p>\n  <p>\n    The examples are very basic, really just enough to get the point of the extension across. If you are interested in seeing more advanced or practical implementations, check out <a href=\"/index.html\">the list of LTI apps on the home page</a>.\n  </p>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Editor button extensions show up in\n            Canvas\n            as icons in the right editor, in this case as a fish icon.\n            This simple demo app lets the user pick from a list of fish\n            pictures. The picture they choose will be inserted into the\n            rich editor.</p>\n        <p>\n            Editor button apps can be configured at the course or account\n            levels. If the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/assets/editor_button_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Another Rich Editor Button Demo</h3>\n        <p>\n            This shows adding an editor button to the rich editor\n            in course/group content. Clicking the new kitten icon will pop up\n            a dialog\n            that uses placekitten.com to generate an image of a kitten set\n            to the user's specified dimensions.\n        </p>\n        <p>\n            Again, if the app is configured at the account\n            level, then the button will appear for any courses/groups within\n            that account.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button2.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/editor_button_tools.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n      <img src=\"/assets/kitten_example.png\" alt=\"\" class=\"preview thumbnail\">\n    </span>\n  </div>\n\n  <div class=\"row-fluid data-row\">\n    <span class=\"span8\">\n      <h3>Combination Rich Editor Button and Module links Demo</h3>\n        <p>\n            This example shows configuring an app to serve multiple purposes\n            at\n            the same time. In this case, a single app can add both a fish\n            icon to the rich editor, and the ability to add named fish pages\n            to\n            course modules.\n        </p>\n      <a class=\"label label-info\" href=\"/config/editor_button_and_resource_selection.xml\">xml\n          configuration</a>\n      <a class=\"label\" href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">more\n          information</a>\n    </span>\n    <span class=\"span4\">\n    </span>\n  </div>\n</section>");
   
 });
 
@@ -2725,7 +2759,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Content Extension</h2>\n  <p>This extension is used to pass content to the tool consumer from the tool provider.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    This is a light-weight LTI extension that allows a <span class=\"label label-info\">provider</span> to pass content to the <span class=\"label label-warning\">consumer</span>. When a <span lass=\"label label-warning\">consumer</span> launches with this extension it passes the <code>ext_content_return_types</code> key with a list of supported types for this launch. The <span lass=\"label label-info\">provider</span> will then attach the selected content to the <code>launch_presentation_return_url</code> and send the browser back to that url.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_content_return_types</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the content extension. The value should be a comma separated list of: <code>url</code>, <code>image_url</code>, <code>lti_launch_url</code>, <code>iframe</code>, <code>oembed</code>, <code>file</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_intended_use</td>\n        <td>no</td>\n        <td>\n          A hint to the <span class=\"label label-info\">provider</span> for how the content will be used. One of <code>navigation</code>, <code>homework</code>, <code>embed</code>, or a value agreed upon by <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_return_url</td>\n        <td>no</td>\n        <td>\n          The url that the <span class=\"label label-info\">provider</span> should redirect the user to with the selected content as query parameters. If not specified the <code>launch_presentation_return_url</code> should be used.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_file_extensions</td>\n        <td>no</td>\n        <td>A comma separated list of the file extensions that are allowed if there is a <code>file</code> return type.</td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    The <span class=\"label label-info\">provider</span> should present the user with a UI for selecting content. Once the user has selected the content the <span class=\"label label-info\"> provider</span> should redirect the user back to the <code>ext_content_return_url</code>, or if it wasn't sent, to <code>launch_presentation_return_url</code>.\n  </p>\n  <p>\n    The information for the selected content should be added to query parameters on the return url. The <code>return_type</code> key should specify the type, and the other key/value pairs should be sent as specified in their sections below.\n  </p>\n\n  <fieldset>\n    <legend>url</legend>\n    <p>\n      Return a url. If the intended use is <code>embed</code> the url will likely be used as an <code>href</code>. If the intended use is something else the extra link info may be discarded.\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>url</code></td></tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>The url. Likely used as the 'href' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value may be ignored</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>target</td>\n          <td>no</td>\n          <td>this is used as the 'target' attribute of the inserted link</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;</li>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>text</strong>=text%20for%20link</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>file</legend>\n    <p>Return a url to a file which the <span class=\"label label-warning\">consumer</span> will download.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>file</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is a URL to the file that can be retrieved without requiring any additional authentication (no sessions, cookies, etc.)</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>yes</td>\n          <td>the filename</td>\n        </tr>\n        <tr>\n          <td>content_type</td>\n          <td>no</td>\n          <td>content or MIME type of the file to be retrieved</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2file.pdf&amp;<strong>text</strong>=file.pdf</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>image_url</legend>\n    <p>Used to return a url to an image. It is generally implied the image will be placed with an img tag in the <span class=\"label label-warning\">consumer</span>.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>image_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is used as the 'alt' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded image tag</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage.gif&amp;<strong>alt</strong>=good+picture&amp;<strong>width</strong>=30&amp;<strong>height</strong>=50</li>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage2.gif&amp;<strong>alt</strong>=&amp;<strong>width</strong>=300&amp;<strong>height</strong>=500</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>iframe</legend>\n    <p>Return info to embed an iframe.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>iframe</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded iframe</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>title</strong>=great%20content</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>lti_launch_url</legend>\n    <p>Return an LTI launch url.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>lti_launch_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is URL that will be used to load the external tool. Any custom parameters should be in the query string.</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>the title of the resource link or the 'title' attribute of the inserted external tool link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value will be ignored.</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Flti_link%3Fkey%3Dval%26key2%3Dval2</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link&amp;<strong>title</strong>=hey%20there</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>oembed</legend>\n    <p>\n      For other types of rich content (such as a video tag, a large block of text, etc.) we also support the oEmbed standard. oEmbed works by giving Canvas an additional URL that can be queried to retrieve the block of content to be embedded. See <a href=\"http://oembed.com\">http://oembed.com</a> for more details about how oEmbed works\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>oembed</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is the oEmbed resource URL</td>\n        </tr>\n        <tr>\n          <td>endpoint</td>\n          <td>no</td>\n          <td>this is the oEmbed API endpoint URL</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=https%3A%2F%2Fothersite.com%2Foembed&amp;url=https%3A%2F%2Fothersite.com%2Fresources%2Fimage1</li>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=http%3A%2F%2Fwww.flickr.com%2Fservices%2Foembed%2F&amp;url=http%3A%2F%2Fwww.flickr.com%2Fphotos%2Fbees%2F2341623661%2F</li>\n    </ul>\n  </fieldset>\n</section>\n");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Content Extension</h2>\n  <p>This extension is used to pass content to the tool consumer from the tool provider.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    This is a light-weight LTI extension that allows a <span class=\"label label-info\">provider</span> to pass content to the <span class=\"label label-warning\">consumer</span>. When a <span lass=\"label label-warning\">consumer</span> launches with this extension it passes the <code>ext_content_return_types</code> key with a list of supported types for this launch. The <span lass=\"label label-info\">provider</span> will then attach the selected content to the <code>launch_presentation_return_url</code> and send the browser back to that url.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_content_return_types</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the content extension. The value should be a comma separated list of: <code>url</code>, <code>image_url</code>, <code>lti_launch_url</code>, <code>iframe</code>, <code>oembed</code>, <code>file</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_intended_use</td>\n        <td>no</td>\n        <td>\n          A hint to the <span class=\"label label-info\">provider</span> for how the content will be used. One of <code>navigation</code>, <code>homework</code>, <code>embed</code>, or a value agreed upon by <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_return_url</td>\n        <td>no</td>\n        <td>\n          The url that the <span class=\"label label-info\">provider</span> should redirect the user to with the selected content as query parameters. If not specified the <code>launch_presentation_return_url</code> should be used.\n        </td>\n      </tr>\n      <tr>\n        <td>ext_content_file_extensions</td>\n        <td>no</td>\n        <td>A comma separated list of the file extensions that are allowed if there is a <code>file</code> return type.</td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    The <span class=\"label label-info\">provider</span> should present the user with a UI for selecting content. Once the user has selected the content the <span class=\"label label-info\"> provider</span> should redirect the user back to the <code>ext_content_return_url</code>, or if it wasn't sent, to <code>launch_presentation_return_url</code>.\n  </p>\n  <p>\n    The information for the selected content should be added to query parameters on the return url. The <code>return_type</code> key should specify the type, and the other key/value pairs should be sent as specified in their sections below.\n  </p>\n\n  <fieldset>\n    <legend>url</legend>\n    <p>\n      Return a url. If the intended use is <code>embed</code> the url will likely be used as an <code>href</code>. If the intended use is something else the extra link info may be discarded.\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>url</code></td></tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>The url. Likely used as the 'href' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value may be ignored</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the inserted link</td>\n        </tr>\n        <tr>\n          <td>target</td>\n          <td>no</td>\n          <td>this is used as the 'target' attribute of the inserted link</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;</li>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>text</strong>=text%20for%20link</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>file</legend>\n    <p>Return a url to a file which the <span class=\"label label-warning\">consumer</span> will download.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>file</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is a URL to the file that can be retrieved without requiring any additional authentication (no sessions, cookies, etc.)</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>yes</td>\n          <td>the filename</td>\n        </tr>\n        <tr>\n          <td>content_type</td>\n          <td>no</td>\n          <td>content or MIME type of the file to be retrieved</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2file.pdf&amp;<strong>text</strong>=file.pdf</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>image_url</legend>\n    <p>Used to return a url to an image. It is generally implied the image will be placed with an img tag in the <span class=\"label label-warning\">consumer</span>.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>image_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is used as the 'alt' attribute of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded image tag</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded image tag</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage.gif&amp;<strong>alt</strong>=good+picture&amp;<strong>width</strong>=30&amp;<strong>height</strong>=50</li>\n      <li>http://example.com/done?<strong>return_type</strong>=image_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Fimage2.gif&amp;<strong>alt</strong>=&amp;<strong>width</strong>=300&amp;<strong>height</strong>=500</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>iframe</legend>\n    <p>Return info to embed an iframe.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>iframe</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is used as the 'src' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>this is used as the 'title' attribute of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>width</td>\n          <td>no</td>\n          <td>this is used as the 'width' style of the embedded iframe</td>\n        </tr>\n        <tr>\n          <td>height</td>\n          <td>no</td>\n          <td>this is used as the 'height' style of the embedded iframe</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=iframe&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2link&amp;<strong>title</strong>=great%20content</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>lti_launch_url</legend>\n    <p>Return an LTI launch url.</p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>lti_launch_url</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is URL that will be used to load the external tool. Any custom parameters should be in the query string.</td>\n        </tr>\n        <tr>\n          <td>title</td>\n          <td>no</td>\n          <td>the title of the resource link or the 'title' attribute of the inserted external tool link</td>\n        </tr>\n        <tr>\n          <td>text</td>\n          <td>no</td>\n          <td>this is the suggested text for the inserted link. If the user has already selected some content before opening this dialog, the link will wrap that content and this value will be ignored.</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2Flti_link%3Fkey%3Dval%26key2%3Dval2</li>\n      <li>http://example.com/done?<strong>return_type</strong>=lti_launch_url&amp;<strong>url</strong>=https%3A%2F%2Fothersite.com%2lti_link&amp;<strong>title</strong>=hey%20there</li>\n    </ul>\n  </fieldset>\n\n  <fieldset>\n    <legend>oembed</legend>\n    <p>\n      For other types of rich content (such as a video tag, a large block of text, etc.) we also support the oEmbed standard. oEmbed works by giving Canvas an additional URL that can be queried to retrieve the block of content to be embedded. See <a href=\"http://oembed.com\">http://oembed.com</a> for more details about how oEmbed works\n    </p>\n    <table class=\"table table-striped table-bordered table-condensed\">\n      <thead>\n        <tr>\n          <th>Name</th>\n          <th>Required</th>\n          <th>Description</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <td>return_type</td>\n          <td>yes</td>\n          <td>should have value of <code>oembed</code></td>\n        </tr>\n        <tr>\n          <td>url</td>\n          <td>yes</td>\n          <td>this is the oEmbed resource URL</td>\n        </tr>\n        <tr>\n          <td>endpoint</td>\n          <td>no</td>\n          <td>this is the oEmbed API endpoint URL</td>\n        </tr>\n      </tbody>\n    </table>\n\n    <h4>Examples:</h4>\n    <p>\n      If the <code>launch_presentation_return_url</code> were <code><a href=\"http://www.example.com/done\">http://example.com/done</a></code>, possible return URLs could include:\n    </p>\n    <ul>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=https%3A%2F%2Fothersite.com%2Foembed&amp;url=https%3A%2F%2Fothersite.com%2Fresources%2Fimage1</li>\n      <li>http://www.example.com/done?return_type=oembed&amp;endpoint=http%3A%2F%2Fwww.flickr.com%2Fservices%2Foembed%2F&amp;url=http%3A%2F%2Fwww.flickr.com%2Fphotos%2Fbees%2F2341623661%2F</li>\n    </ul>\n  </fieldset>\n</section>\n");
   
 });
 
@@ -2776,7 +2810,7 @@ function program13(depth0,data) {
   data.buffer.push("Homework");
   }
 
-  data.buffer.push("<section>\n  <h2>Introduction</h2>\n  \n  <p>LTI provides a great base for creating a connection between learning tools. These extensions are used to add functionality on top of that connection. These are unofficial and not all consumers and providers will support them.</p>\n\n  <hr>\n\n  <h3>Extensions</h3>\n\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n    <tr>\n      <th>Name</th>\n      <th>Description</th>\n    </tr>\n    </thead>\n    <tbody>\n    <tr>\n      <td>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Extensions</h2>\n  \n  <p>LTI provides a great base for creating a connection between learning tools. These extensions are used to add functionality on top of that connection. These are unofficial and not all consumers and providers will support them.</p>\n\n  <hr>\n\n  <h3>Global Configurations</h3>\n\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n    <tr>\n      <th>Name</th>\n      <th>Description</th>\n    </tr>\n    </thead>\n    <tbody>\n    <tr>\n      <td>");
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
@@ -2841,7 +2875,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Result Data Extension</h2>\n  <p>This extension is used to pass data in addition to a grade when using the outcome service.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    If this extension is supported the <span class=\"label label-warning\">consumer</span> sends a list of accepted data values and the <span class=\"label label-info\">provider</span> adds a <code>resultData</code> node to the result XML sent to the <span class=\"label label-warning\">consumer</span>.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_outcome_data_values_accepted</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the resultData extension. The value should be a comma separated list of: <code>url</code>, <code>text</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    If the <span class=\"label label-info\">provider</span> wants to supply these values, it can augment the POX sent with the grading value. <a href=\"http://www.imsglobal.org/LTI/v1p1/ltiIMGv1p1.html#_Toc319560473\">LTI replaceResult POX</a>\n  </p>\n  <p>\n    Only one type of resultData should be sent, if multiple types are sent the tool consumer behavior is undefined and is implementation-specific.\n  </p>\n\n  <fieldset>\n    <legend>Text</legend>\n    <p>\n      Add a <code>resultData</code> node with a <code>text</code> node of plain text in the same encoding as the rest of the document within it like this:\n    </p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n&lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n  &lt;imsx_POXHeader&gt;\n    &lt;imsx_POXRequestHeaderInfo&gt;\n      &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n      &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n    &lt;/imsx_POXRequestHeaderInfo&gt;\n  &lt;/imsx_POXHeader&gt;\n  &lt;imsx_POXBody&gt;\n    &lt;replaceResultRequest&gt;\n      &lt;resultRecord&gt;\n        &lt;sourcedGUID&gt;\n          &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n        &lt;/sourcedGUID&gt;\n        &lt;result&gt;\n          &lt;resultScore&gt;\n            &lt;language&gt;en&lt;/language&gt;\n            &lt;textString&gt;0.92&lt;/textString&gt;\n          &lt;/resultScore&gt;\n          &lt;!--      Added element      --&gt;\n          &lt;resultData&gt;\n            &lt;text&gt;text data for canvas submission&lt;/text&gt;\n          &lt;/resultData&gt;\n        &lt;/result&gt;\n      &lt;/resultRecord&gt;\n    &lt;/replaceResultRequest&gt;\n  &lt;/imsx_POXBody&gt;\n&lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n  </fieldset>\n\n  <fieldset>\n    <legend>URL</legend>\n    <p>Add a <code>resultData</code> node with a <code>url</code> node within it like this:</p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n  &lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n    &lt;imsx_POXHeader&gt;\n      &lt;imsx_POXRequestHeaderInfo&gt;\n        &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n        &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n      &lt;/imsx_POXRequestHeaderInfo&gt;\n    &lt;/imsx_POXHeader&gt;\n    &lt;imsx_POXBody&gt;\n      &lt;replaceResultRequest&gt;\n        &lt;resultRecord&gt;\n          &lt;sourcedGUID&gt;\n            &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n          &lt;/sourcedGUID&gt;\n          &lt;result&gt;\n            &lt;resultScore&gt;\n              &lt;language&gt;en&lt;/language&gt;\n              &lt;textString&gt;0.92&lt;/textString&gt;\n            &lt;/resultScore&gt;\n            &lt;!--      Added element      --&gt;\n            &lt;resultData&gt;\n              &lt;url&gt;https://www.example.com/cool_lti_link_submission&lt;/url&gt;\n            &lt;/resultData&gt;\n          &lt;/result&gt;\n        &lt;/resultRecord&gt;\n      &lt;/replaceResultRequest&gt;\n    &lt;/imsx_POXBody&gt;\n  &lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Result Data Extension</h2>\n  \n  <p>This extension is used to pass data in addition to a grade when using the outcome service.</p>\n\n  <h3>Introduction</h3>\n  <p>\n    If this extension is supported the <span class=\"label label-warning\">consumer</span> sends a list of accepted data values and the <span class=\"label label-info\">provider</span> adds a <code>resultData</code> node to the result XML sent to the <span class=\"label label-warning\">consumer</span>.\n  </p>\n\n  <h3>Launch Parameters</h3>\n  <table class=\"table table-striped table-bordered table-condensed\">\n    <thead>\n      <tr>\n        <th>Name</th>\n        <th>Required</th>\n        <th>Description</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>ext_outcome_data_values_accepted</td>\n        <td>yes</td>\n        <td>\n            Presence of this key indicates that the <span class=\"label label-warning\">consumer</span> is capable of using the resultData extension. The value should be a comma separated list of: <code>url</code>, <code>text</code>, or values agreed upon between <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span>.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n\n  <h3>Tool Provider Response</h3>\n  <p>\n    If the <span class=\"label label-info\">provider</span> wants to supply these values, it can augment the POX sent with the grading value. <a href=\"http://www.imsglobal.org/LTI/v1p1/ltiIMGv1p1.html#_Toc319560473\">LTI replaceResult POX</a>\n  </p>\n  <p>\n    Only one type of resultData should be sent, if multiple types are sent the tool consumer behavior is undefined and is implementation-specific.\n  </p>\n\n  <fieldset>\n    <legend>Text</legend>\n    <p>\n      Add a <code>resultData</code> node with a <code>text</code> node of plain text in the same encoding as the rest of the document within it like this:\n    </p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n&lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n  &lt;imsx_POXHeader&gt;\n    &lt;imsx_POXRequestHeaderInfo&gt;\n      &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n      &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n    &lt;/imsx_POXRequestHeaderInfo&gt;\n  &lt;/imsx_POXHeader&gt;\n  &lt;imsx_POXBody&gt;\n    &lt;replaceResultRequest&gt;\n      &lt;resultRecord&gt;\n        &lt;sourcedGUID&gt;\n          &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n        &lt;/sourcedGUID&gt;\n        &lt;result&gt;\n          &lt;resultScore&gt;\n            &lt;language&gt;en&lt;/language&gt;\n            &lt;textString&gt;0.92&lt;/textString&gt;\n          &lt;/resultScore&gt;\n          &lt;!--      Added element      --&gt;\n          &lt;resultData&gt;\n            &lt;text&gt;text data for canvas submission&lt;/text&gt;\n          &lt;/resultData&gt;\n        &lt;/result&gt;\n      &lt;/resultRecord&gt;\n    &lt;/replaceResultRequest&gt;\n  &lt;/imsx_POXBody&gt;\n&lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n  </fieldset>\n\n  <fieldset>\n    <legend>URL</legend>\n    <p>Add a <code>resultData</code> node with a <code>url</code> node within it like this:</p>\n    <pre class=\"code\"><code>&lt;?xml version = \"1.0\" encoding = \"UTF-8\"?&gt;\n  &lt;imsx_POXEnvelopeRequest xmlns=\"http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0\"&gt;\n    &lt;imsx_POXHeader&gt;\n      &lt;imsx_POXRequestHeaderInfo&gt;\n        &lt;imsx_version&gt;V1.0&lt;/imsx_version&gt;\n        &lt;imsx_messageIdentifier&gt;999999123&lt;/imsx_messageIdentifier&gt;\n      &lt;/imsx_POXRequestHeaderInfo&gt;\n    &lt;/imsx_POXHeader&gt;\n    &lt;imsx_POXBody&gt;\n      &lt;replaceResultRequest&gt;\n        &lt;resultRecord&gt;\n          &lt;sourcedGUID&gt;\n            &lt;sourcedId&gt;3124567&lt;/sourcedId&gt;\n          &lt;/sourcedGUID&gt;\n          &lt;result&gt;\n            &lt;resultScore&gt;\n              &lt;language&gt;en&lt;/language&gt;\n              &lt;textString&gt;0.92&lt;/textString&gt;\n            &lt;/resultScore&gt;\n            &lt;!--      Added element      --&gt;\n            &lt;resultData&gt;\n              &lt;url&gt;https://www.example.com/cool_lti_link_submission&lt;/url&gt;\n            &lt;/resultData&gt;\n          &lt;/result&gt;\n        &lt;/resultRecord&gt;\n      &lt;/replaceResultRequest&gt;\n    &lt;/imsx_POXBody&gt;\n  &lt;/imsx_POXEnvelopeRequest&gt;</code></pre>\n</section>");
   
 });
 
@@ -2851,17 +2885,29 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section id=\"docs-building-an-lti-app\">\n  <h2>Building an LTI App</h2>\n  <p>\n    If you want to build an LTI-compliant app or <span class=\"label label-info\">provider</span> then there's really only a couple things you need to worry about: how users can configure your app, how to accept a launch from a <span class=\"label label-warning\">consumer</span>, and potentially handling some of the extra goodies LTI makes possible.\n  </p>\n  <h4>App Configuration</h4>\n  <p>\n    App configuration is <a href=\"/tutorials.html\">different for every LMS</a> right now, but we're working on that. The best way to provide a standard configuration for your app is by providing a url that returns an xml configuration for your app. There's a lot of <a href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">examples of app configurations in the Canvas API documentation</a>. Remember, if there's custom values you want to make sure come across with every user, this is the place to include them. The only really crucial iece to specify is the url endpoint that will accept the POST requests, <code>blti:launch_url</code>.\n  </p>\n  <p>\n    Typically users will either copy the url to your xml configuration, or copy and paste the configuration itself. Notice that the configuration does not include the consumer key or shared secret. These are account-specific values, and if they were included they'd prevent the xml from being reusable. Admins will still have to enter the key and secret values that a <span class=\"label label-info\">provider</span> gives them into the <span class=\"label label-warning\">consumer</span> manually.\n  </p>\n  <h4>App Launch</h4>\n  <p>\n    Once an app is configured, it will be added by one or more instructors into their material as some sort of link or button in the <span class=\"label label-warning\">consumer</span>. Any time a student, instructor, administrator, or random internet passersby clicks the link they will be directed to the <span class=\"label label-info\">provider</span> via a signed POST request. It is the <span class=\"label label-info\">provider's</span> responsibility to confirm the signature on the POST request. If the signature is invalid then none of the information should be trusted.\n  </p>\n  <p>\n    If the signature is valid then you should accept the identity assertion provided by the <span class=\"label label-warning\">consumer</span> and log the user in to your service. Many services have their own registration flow, so it's not uncommon to require an additional registration step the first time a user launches your app.\n  </p>\n  <p>\n    Signatures are generated using <a href=\"http://oauth.net/core/1.0/#signing_process\">the OAuth signing process</a>. Google provides <a href=\"http://oauth.googlecode.com/svn/code/javascript/example/signature.html\">a nice tool for generating OAuth signatures</a> that you can use to test your signing code, although you'll probably save yourself some trouble if you can find a library to do the work for you.\n  </p>\n  <h4>Extras</h4>\n  <p>\n    This page has described the most basic type of LTI integration. There's a number of other things you can do on top of this, including passing scores from the <span class=\"label label-info\">provider</span> back to the gradebook of the consumer, or adding buttons to the rich editor in the <span class=\"label label-warning\">consumer</span> to insert rich content generated or curated by the <span class=\"label label-info\">provider</span>. <a href=\"/extensions\">Check out the extensions demos page</a> or the <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas API documentation on external tools</a> for more detail on these extensions and how they work.\n  </p>\n</section>");
+  data.buffer.push("<section id=\"docs-building-an-lti-app\">\n  <h2 class=\"page-header\">Building an LTI App</h2>\n  \n  <p>\n    If you want to build an LTI-compliant app or <span class=\"label label-info\">provider</span> then there's really only a couple things you need to worry about: how users can configure your app, how to accept a launch from a <span class=\"label label-warning\">consumer</span>, and potentially handling some of the extra goodies LTI makes possible.\n  </p>\n  <h4>App Configuration</h4>\n  <p>\n    App configuration is <a href=\"/tutorials.html\">different for every LMS</a> right now, but we're working on that. The best way to provide a standard configuration for your app is by providing a url that returns an xml configuration for your app. There's a lot of <a href=\"https://canvas.instructure.com/doc/api/tools_xml.html\">examples of app configurations in the Canvas API documentation</a>. Remember, if there's custom values you want to make sure come across with every user, this is the place to include them. The only really crucial iece to specify is the url endpoint that will accept the POST requests, <code>blti:launch_url</code>.\n  </p>\n  <p>\n    Typically users will either copy the url to your xml configuration, or copy and paste the configuration itself. Notice that the configuration does not include the consumer key or shared secret. These are account-specific values, and if they were included they'd prevent the xml from being reusable. Admins will still have to enter the key and secret values that a <span class=\"label label-info\">provider</span> gives them into the <span class=\"label label-warning\">consumer</span> manually.\n  </p>\n  <h4>App Launch</h4>\n  <p>\n    Once an app is configured, it will be added by one or more instructors into their material as some sort of link or button in the <span class=\"label label-warning\">consumer</span>. Any time a student, instructor, administrator, or random internet passersby clicks the link they will be directed to the <span class=\"label label-info\">provider</span> via a signed POST request. It is the <span class=\"label label-info\">provider's</span> responsibility to confirm the signature on the POST request. If the signature is invalid then none of the information should be trusted.\n  </p>\n  <p>\n    If the signature is valid then you should accept the identity assertion provided by the <span class=\"label label-warning\">consumer</span> and log the user in to your service. Many services have their own registration flow, so it's not uncommon to require an additional registration step the first time a user launches your app.\n  </p>\n  <p>\n    Signatures are generated using <a href=\"http://oauth.net/core/1.0/#signing_process\">the OAuth signing process</a>. Google provides <a href=\"http://oauth.googlecode.com/svn/code/javascript/example/signature.html\">a nice tool for generating OAuth signatures</a> that you can use to test your signing code, although you'll probably save yourself some trouble if you can find a library to do the work for you.\n  </p>\n  <h4>Extras</h4>\n  <p>\n    This page has described the most basic type of LTI integration. There's a number of other things you can do on top of this, including passing scores from the <span class=\"label label-info\">provider</span> back to the gradebook of the consumer, or adding buttons to the rich editor in the <span class=\"label label-warning\">consumer</span> to insert rich content generated or curated by the <span class=\"label label-info\">provider</span>. <a href=\"/extensions\">Check out the extensions demos page</a> or the <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas API documentation on external tools</a> for more detail on these extensions and how they work.\n  </p>\n</section>");
   
 });
 
 Ember.TEMPLATES['basics/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
+  var buffer = '', stack1, stack2, hashTypes, hashContexts, options, self=this, helperMissing=helpers.helperMissing;
+
+function program1(depth0,data) {
   
+  
+  data.buffer.push("Here is a list of parameters");
+  }
 
-
-  data.buffer.push("<section id=\"docs-introduction\">\n  <h2 style=\"margin-top: 0px;\">Introduction</h2>\n  <p>\n    The main thing with LTI is the identity assertion. LTI is a way for one system (the tool <span class=\"label label-warning\">consumer</span>, typically an LMS) to send a user to another system (the tool <span class=\"label label-info\">provider</span>, some service that integrates withthe LMS -- sorry, I know the names are confusing. I've tried using colors tohelp make things clearer, but that may just make it worse...) in a trusted way. The mostcommon reason for the trust assertion is to allow the user to be automatically signed in and directed to a specific course or module when the <span class=\"label label-info\">provider</span> renders content.\n  </p>\n  <p>\n    The <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span> have some predefined relationship via a consumer key and shared secret that are used to sign any messages passed between systems. All messages are <a href=\"http://oauth.googlecode.com/svn/code/javascript/example/signature.html\">signed with an OAuth signature</a> that can be verified by either party. For the most part information only travels one way, from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span>.\n  </p>\n  <p>\n    The identity assertion happens through an HTTP POST request from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span>. The POST request must happen in the user's browser, which means it needs to be  launched by submitting a form. Most of the time the form is submitted via JavaScript to an iframe rendered on a page within the <span class=\"label label-warning\">consumer</span>, so the user doesn't have an extra step when trying to launch an app.\n  </p>\n  <p>\n    <a href=\"#params\">Below are a list of parameters</a> that can be sent as part of the POST request. Some are required, some are optional. Most apps shouldn't need more than the first set of parameters and can probably just ignore the rest.\n  </p>\n</section>");
+  data.buffer.push("<section id=\"docs-introduction\">\n  <h2 class=\"page-header\">Introduction</h2>\n  \n  <p>\n    The main thing with LTI is the identity assertion. LTI is a way for one system (the tool <span class=\"label label-warning\">consumer</span>, typically an LMS) to send a user to another system (the tool <span class=\"label label-info\">provider</span>, some service that integrates withthe LMS -- sorry, I know the names are confusing. I've tried using colors tohelp make things clearer, but that may just make it worse...) in a trusted way. The mostcommon reason for the trust assertion is to allow the user to be automatically signed in and directed to a specific course or module when the <span class=\"label label-info\">provider</span> renders content.\n  </p>\n\n  <img src=\"/assets/tool_launch.png\" class=\"image\" style=\"float: left; margin: 20px 20px 20px 0;\" />\n\n  <p>\n    The <span class=\"label label-warning\">consumer</span> and <span class=\"label label-info\">provider</span> have some predefined relationship via a consumer key and shared secret that are used to sign any messages passed between systems. All messages are <a href=\"http://oauth.googlecode.com/svn/code/javascript/example/signature.html\">signed with an OAuth signature</a> that can be verified by either party. For the most part information only travels one way, from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span>.\n  </p>\n  <p>\n    The identity assertion happens through an HTTP POST request from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span>. The POST request must happen in the user's browser, which means it needs to be  launched by submitting a form. Most of the time the form is submitted via JavaScript to an iframe rendered on a page within the <span class=\"label label-warning\">consumer</span>, so the user doesn't have an extra step when trying to launch an app.\n  </p>\n  <p>\n    ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "basics.post_parameters", options) : helperMissing.call(depth0, "linkTo", "basics.post_parameters", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push(" that can be sent as part of the POST request. Some are required, some are optional. Most apps shouldn't need more than the first set of parameters and can probably just ignore the rest.\n  </p>\n</section>");
+  return buffer;
   
 });
 
@@ -2871,7 +2917,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section id=\"docs-other-resources\">\n  <h2>Other Resources</h2>\n  <ul class=\"nav nav-list\">\n    <li class=\"nav-header\">Code / Libraries</li>\n    <li>\n      <a href=\"/data/lti_examples.jsonp\">The list of apps on this site's home page is available as a <strong>jsonp</strong> list</a>\n    </li>\n    <li>\n      <a href=\"https://github.com/instructure/ims-lti\">Source code for LTI <strong>ruby</strong> gem</a>\n    </li>\n    <li>\n      <a href=\"http://code.google.com/p/ims-dev/\">Source code for LTI <strong>java</strong> and <strong>php</strong> libraries</a>\n    </li>\n    <li>\n      <a href=\"http://swl10.blogspot.com/2011/03/oauth-python-and-basic-lti.html\">How to use the <strong>python</strong> oauth libraries with LTI, with a link to an example implementation</a>\n    </li>\n    <li>\n      <a href=\"https://ltisamples.codeplex.com/\">LTI samples written for .NET</a>\n    </li>\n    <li class=\"nav-header\">Documentation</li>\n    <li>\n      <a href=\"/extensions/index.html\">Examples of apps that leverage LTI extensions</a>\n    </li>\n    <li>\n      <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas documentation on LTI external tools</a>\n    </li>\n    <li>\n      <a href=\"http://www.edugarage.com/download/attachments/72811512/Code+Your+Own+Tool+Integration+Using+the+Basic+Learning+Tools+Interoperability+(LTI)+Standard.pdf?version=1&amp;modificationDate=1311710692377&amp;ei=_3d2T_XuN7H9iQKQyei9DA&amp;usg=AFQjCNF9taxr5y951oY-s0GKcLlFecpk1A&amp;sig2=TLVyrX-TUU5fADlHikNJVQ\">Blackboard presentation on LTI (pdf - 3.6MB)</a>\n    </li>\n    <li>\n      <a href=\"http://www.imsglobal.org/lti/\">Official LTI documentation</a>\n    </li>\n  </ul>\n</section>");
+  data.buffer.push("<section id=\"docs-other-resources\">\n  <h2 class=\"page-header\">Other Resources</h2>\n  \n  <ul class=\"nav nav-list\">\n    <li class=\"nav-header\">Code / Libraries</li>\n    <li>\n      <a href=\"/data/lti_examples.jsonp\">The list of apps on this site's home page is available as a <strong>jsonp</strong> list</a>\n    </li>\n    <li>\n      <a href=\"https://github.com/instructure/ims-lti\">Source code for LTI <strong>ruby</strong> gem</a>\n    </li>\n    <li>\n      <a href=\"http://code.google.com/p/ims-dev/\">Source code for LTI <strong>java</strong> and <strong>php</strong> libraries</a>\n    </li>\n    <li>\n      <a href=\"http://swl10.blogspot.com/2011/03/oauth-python-and-basic-lti.html\">How to use the <strong>python</strong> oauth libraries with LTI, with a link to an example implementation</a>\n    </li>\n    <li>\n      <a href=\"https://ltisamples.codeplex.com/\">LTI samples written for .NET</a>\n    </li>\n    <li class=\"nav-header\">Documentation</li>\n    <li>\n      <a href=\"/extensions/index.html\">Examples of apps that leverage LTI extensions</a>\n    </li>\n    <li>\n      <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas documentation on LTI external tools</a>\n    </li>\n    <li>\n      <a href=\"http://www.edugarage.com/download/attachments/72811512/Code+Your+Own+Tool+Integration+Using+the+Basic+Learning+Tools+Interoperability+(LTI)+Standard.pdf?version=1&amp;modificationDate=1311710692377&amp;ei=_3d2T_XuN7H9iQKQyei9DA&amp;usg=AFQjCNF9taxr5y951oY-s0GKcLlFecpk1A&amp;sig2=TLVyrX-TUU5fADlHikNJVQ\">Blackboard presentation on LTI (pdf - 3.6MB)</a>\n    </li>\n    <li>\n      <a href=\"http://www.imsglobal.org/lti/\">Official LTI documentation</a>\n    </li>\n  </ul>\n</section>");
   
 });
 
@@ -2881,54 +2927,111 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section id=\"docs-post-parameters\">\n  <h2>POST Parameters</h2>\n  <p>\n    These are all of the known values that can be passed from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span> when a user clicks a link to launch the app.\n  </p>\n  <h3>Most Common Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lti_message_type</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>basic-lti-launch-request</code></td>\n      </tr>\n      <tr>\n        <td><code>lti_version</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>LTI-1p0</code></td>\n      </tr>\n      <tr>\n        <td><code>resource_link_id</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>\n        unique id referencing the link, or \"placement\", of the app in the\n        <span class=\"label label-warning\">consumer</span>. If an app was added twice\n        to the same class, each placement would send a different id, and\n        should be considered a unique \"launch\". For example, if the\n        <span class=\"label label-info\">provider</span> were a chat room\n        app, then each <code>resource_link_id</code> would be a separate\n        room.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n        unique id referencing the user accessing the\n        app. <span class=\"label label-info\">providers</span> should\n        consider this id an opaque identifier.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_image</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>if provided, this would be a url to an avatar image for\n        the current user. We recommend that these urls be 50px wide\n        and tall, and don't expire for at least 3 months.</td>\n      </tr>\n      <tr>\n        <td><code>roles</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>there's a long list of possible roles, but here's the\n          most common ones:</p>\n          <ul>\n            <li><code>Learner</code></li>\n            <li><code>Instructor</code></li>\n            <li><code>ContentDeveloper</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Observer</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Administrator</code></li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_full</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Full name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_outcome_service_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this url is passed to the <span class=\"label label-info\">provider</span> then it means the app is authorized to send grade values back to the <span class=\"label label-warning\">consumer</span> gradebook for any students that access the app. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/assignment_tools.html\">Canvas API documentation</a>.</td>\n      </tr>\n      <tr>\n        <td><code>selection_directive</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this parameter is passed to the <span class=\"label label-info\">provider</span> then it means the <span class=\"label label-warning\">consumer</span> is expecting the <span class=\"label label-info\">provider</span> to return some piece of information such as a url, an html snippet, etc. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas API documentation</a>.</td>\n      </tr>\n    </tbody>\n  </table>\n  <h3>Additional Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lis_person_name_given</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>First name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_family</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Last name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_contact_email_primary</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Email address of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>context_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>unique id of the course from which the user is accessing the app. If a app were added multiple times to the same course, this id would be the same regardless of which link was used to launch the app.</td>\n      </tr>\n      <tr>\n        <td><code>context_type</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>this is the type of context from which the user is accessing the app. If it's provided, this will most likely be <code>CourseSection</code></td>\n      </tr>\n      <tr>\n        <td><code>context_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>context_label</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>short name or course code of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_locale</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>locale (i.e. <code>en-US</code>) for the user accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_document_target</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>if provided, this value will be either <code<window< code=\"\"> (if the app has been launched in a new window) or <code>iframe</code>.</code<window<></td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_css_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>css file that could be included by the <span class=\"label label-info\">provider</span> to help its styling better match the <span class=\"label label-warning\">consumer</span> styling. This isn't well-documented, so I typically pretend it doesn't exist.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_width</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>width of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_height</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>height of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_return_url</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>url to send the user to when they're finished with the <span class=\"label label-info\">provider</span>. The <span class=\"label label-info\">provider</span> can optionally send one of four values as query parameters appended to the url:</p>\n          <ul>\n            <li><code>lti_errormsg</code> - error message to show to the user</li>\n            <li><code>lti_errorlog</code> - error message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n            <li><code>lti_msg</code> - success message to show to the user</li>\n            <li><code>lti_log</code> - success message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_product_family_code</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>product name for the <span class=\"label label-warning\">consumer</span>. This could\n        be something like <code>moodle</code>, <code>sakai</code> or <code>canvas</code></td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_version</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>version number of the <span class=\"label label-warning\">consumer</span> product.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_guid</code></td>\n        <td><span class=\"label\">strongly recommended</span></td>\n        <td>unique id referencing the instance from which the user is accessing the app. This mostly makes sense only in a multi-tenant environment.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_name</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>url of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_contact_email</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>email address of a contact at the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>custom_*</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>\n          any number of custom values can optionally be sent across. The key\n          for any custom values should start with <code>custom_</code> and should\n          be in snake case. Custom values can optionally be defined on the \n          <span class=\"label label-warning\">consumer</span> side as part of the app configuration\n          process.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</section>");
+  data.buffer.push("<section id=\"docs-post-parameters\">\n  <h2 class=\"page-header\">POST Parameters</h2>\n  \n  <p>\n    These are all of the known values that can be passed from the <span class=\"label label-warning\">consumer</span> to the <span class=\"label label-info\">provider</span> when a user clicks a link to launch the app.\n  </p>\n  <h3>Most Common Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lti_message_type</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>basic-lti-launch-request</code></td>\n      </tr>\n      <tr>\n        <td><code>lti_version</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>set to <code>LTI-1p0</code></td>\n      </tr>\n      <tr>\n        <td><code>resource_link_id</code></td>\n        <td><span class=\"label label-success\">required</span></td>\n        <td>\n        unique id referencing the link, or \"placement\", of the app in the\n        <span class=\"label label-warning\">consumer</span>. If an app was added twice\n        to the same class, each placement would send a different id, and\n        should be considered a unique \"launch\". For example, if the\n        <span class=\"label label-info\">provider</span> were a chat room\n        app, then each <code>resource_link_id</code> would be a separate\n        room.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n        unique id referencing the user accessing the\n        app. <span class=\"label label-info\">providers</span> should\n        consider this id an opaque identifier.\n        </td>\n      </tr>\n      <tr>\n        <td><code>user_image</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>if provided, this would be a url to an avatar image for\n        the current user. We recommend that these urls be 50px wide\n        and tall, and don't expire for at least 3 months.</td>\n      </tr>\n      <tr>\n        <td><code>roles</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>there's a long list of possible roles, but here's the\n          most common ones:</p>\n          <ul>\n            <li><code>Learner</code></li>\n            <li><code>Instructor</code></li>\n            <li><code>ContentDeveloper</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Observer</code></li>\n            <li><code>urn:lti:instrole:ims/lis/Administrator</code></li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_full</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Full name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_outcome_service_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this url is passed to the <span class=\"label label-info\">provider</span> then it means the app is authorized to send grade values back to the <span class=\"label label-warning\">consumer</span> gradebook for any students that access the app. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/assignment_tools.html\">Canvas API documentation</a>.</td>\n      </tr>\n      <tr>\n        <td><code>selection_directive</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>If this parameter is passed to the <span class=\"label label-info\">provider</span> then it means the <span class=\"label label-warning\">consumer</span> is expecting the <span class=\"label label-info\">provider</span> to return some piece of information such as a url, an html snippet, etc. There's more information available in the <a href=\"https://canvas.instructure.com/doc/api/tools_intro.html\">Canvas API documentation</a>.</td>\n      </tr>\n    </tbody>\n  </table>\n  <h3>Additional Parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <thead>\n      <tr>\n        <th>Parameter</th>\n        <th>Status</th>\n        <th>Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td><code>lis_person_name_given</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>First name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_name_family</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Last name of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>lis_person_contact_email_primary</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>Email address of the user accessing the app. This won't be sent if apps are configured to launch users anonymously or with minimal information.</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>resource_link_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the link that launched the app</td>\n      </tr>\n      <tr>\n        <td><code>context_id</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>unique id of the course from which the user is accessing the app. If a app were added multiple times to the same course, this id would be the same regardless of which link was used to launch the app.</td>\n      </tr>\n      <tr>\n        <td><code>context_type</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>this is the type of context from which the user is accessing the app. If it's provided, this will most likely be <code>CourseSection</code></td>\n      </tr>\n      <tr>\n        <td><code>context_title</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>context_label</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>short name or course code of the course from which the user is accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_locale</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>locale (i.e. <code>en-US</code>) for the user accessing the app</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_document_target</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>if provided, this value will be either <code<window< code=\"\"> (if the app has been launched in a new window) or <code>iframe</code>.</code<window<></td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_css_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>css file that could be included by the <span class=\"label label-info\">provider</span> to help its styling better match the <span class=\"label label-warning\">consumer</span> styling. This isn't well-documented, so I typically pretend it doesn't exist.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_width</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>width of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_height</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>height of the frame or window in which the app is launched. This is only a starting point, since the frame could change if the user resizes their window.</td>\n      </tr>\n      <tr>\n        <td><code>launch_presentation_return_url</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>\n          <p>url to send the user to when they're finished with the <span class=\"label label-info\">provider</span>. The <span class=\"label label-info\">provider</span> can optionally send one of four values as query parameters appended to the url:</p>\n          <ul>\n            <li><code>lti_errormsg</code> - error message to show to the user</li>\n            <li><code>lti_errorlog</code> - error message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n            <li><code>lti_msg</code> - success message to show to the user</li>\n            <li><code>lti_log</code> - success message for the <span class=\"label label-warning\">consumer</span> to optionally store without showing the user</li>\n          </ul>\n        </td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_product_family_code</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>product name for the <span class=\"label label-warning\">consumer</span>. This could\n        be something like <code>moodle</code>, <code>sakai</code> or <code>canvas</code></td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_info_version</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>version number of the <span class=\"label label-warning\">consumer</span> product.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_guid</code></td>\n        <td><span class=\"label\">strongly recommended</span></td>\n        <td>unique id referencing the instance from which the user is accessing the app. This mostly makes sense only in a multi-tenant environment.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_name</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>name of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_description</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>description of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_url</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>url of the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>tool_consumer_instance_contact_email</code></td>\n        <td><span class=\"label\">recommended</span></td>\n        <td>email address of a contact at the instance from which the user is accessing the app.</td>\n      </tr>\n      <tr>\n        <td><code>custom_*</code></td>\n        <td><span class=\"label\">optional</span></td>\n        <td>\n          any number of custom values can optionally be sent across. The key\n          for any custom values should start with <code>custom_</code> and should\n          be in snake case. Custom values can optionally be defined on the \n          <span class=\"label label-warning\">consumer</span> side as part of the app configuration\n          process.\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</section>");
   
 });
 
 Ember.TEMPLATES['apps/index'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  var stack1, hashTypes, hashContexts, escapeExpression=this.escapeExpression, self=this, helperMissing=helpers.helperMissing;
+  var buffer = '', stack1, hashTypes, hashContexts, escapeExpression=this.escapeExpression, self=this, helperMissing=helpers.helperMissing;
 
 function program1(depth0,data) {
   
   var buffer = '', stack1, stack2, hashTypes, hashContexts, options;
-  data.buffer.push("\n  <h4>");
+  data.buffer.push("\n  <li>\n    ");
   hashTypes = {};
   hashContexts = {};
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),contexts:[depth0,depth0],types:["STRING","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
-  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "apps.show", "", options) : helperMissing.call(depth0, "linkTo", "apps.show", "", options));
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "apps.show", "app", options) : helperMissing.call(depth0, "linkTo", "apps.show", "app", options));
   if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
-  data.buffer.push("</h4>\n");
+  data.buffer.push("\n  </li>\n");
   return buffer;
   }
 function program2(depth0,data) {
   
-  var hashTypes, hashContexts;
+  var buffer = '', hashContexts, hashTypes;
+  data.buffer.push("\n      <div class=\"banner\">\n        <img ");
+  hashContexts = {'src': depth0};
+  hashTypes = {'src': "ID"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'src': ("app.banner_image_url")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" height=\"125\" />\n      </div>\n      <h4 class=\"name\">");
   hashTypes = {};
   hashContexts = {};
-  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "app.name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</h4>\n      <p class=\"short-description\">");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "app.short_description", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</p>\n      <div class=\"meta\">\n        4 stars, 6 reviews\n      </div>\n    ");
+  return buffer;
   }
 
+  data.buffer.push("<ul id=\"apps-container\">\n");
   hashTypes = {};
   hashContexts = {};
-  stack1 = helpers.each.call(depth0, "controller", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  stack1 = helpers.each.call(depth0, "app", "in", "controller", {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0,depth0,depth0],types:["ID","ID","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
   if(stack1 || stack1 === 0) { data.buffer.push(stack1); }
-  else { data.buffer.push(''); }
+  data.buffer.push("\n</ul>");
+  return buffer;
   
 });
 
 Ember.TEMPLATES['apps/show'] = Ember.Handlebars.template(function anonymous(Handlebars,depth0,helpers,partials,data) {
 this.compilerInfo = [3,'>= 1.0.0-rc.4'];
 helpers = helpers || Ember.Handlebars.helpers; data = data || {};
-  var buffer = '', hashTypes, hashContexts, escapeExpression=this.escapeExpression;
+  var buffer = '', stack1, stack2, hashContexts, hashTypes, options, escapeExpression=this.escapeExpression, self=this, helperMissing=helpers.helperMissing;
 
+function program1(depth0,data) {
+  
+  var hashTypes, hashContexts;
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "author_name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  }
 
-  data.buffer.push("<h2>");
+function program3(depth0,data) {
+  
+  var buffer = '', hashTypes, hashContexts;
+  data.buffer.push("\n            <li>");
+  hashTypes = {};
+  hashContexts = {};
+  data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "extension.content", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push("</li>\n            ");
+  return buffer;
+  }
+
+  data.buffer.push("<div class=\"row-fluid\">\n  <div class=\"span9\">\n    <section class=\"app-details\">\n      <div class=\"row-fluid\">\n        <div class=\"span5\">\n          <img ");
+  hashContexts = {'src': depth0};
+  hashTypes = {'src': "ID"};
+  data.buffer.push(escapeExpression(helpers.bindAttr.call(depth0, {hash:{
+    'src': ("banner_image_url")
+  },contexts:[],types:[],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
+  data.buffer.push(" height=\"125\" />\n        </div>\n        <div class=\"span7\">\n          <h2>");
   hashTypes = {};
   hashContexts = {};
   data.buffer.push(escapeExpression(helpers._triageMustache.call(depth0, "name", {hash:{},contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data})));
-  data.buffer.push("</h2>\n\n");
+  data.buffer.push("</h2>\n          <small class=\"author\">by ");
+  hashTypes = {};
+  hashContexts = {};
+  options = {hash:{},inverse:self.noop,fn:self.program(1, program1, data),contexts:[depth0],types:["STRING"],hashContexts:hashContexts,hashTypes:hashTypes,data:data};
+  stack2 = ((stack1 = helpers.linkTo),stack1 ? stack1.call(depth0, "apps", options) : helperMissing.call(depth0, "linkTo", "apps", options));
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("</small>\n          \n          <ul class=\"tags\">\n            ");
+  hashTypes = {};
+  hashContexts = {};
+  stack2 = helpers.each.call(depth0, "extension", "in", "extensions", {hash:{},inverse:self.noop,fn:self.program(3, program3, data),contexts:[depth0,depth0,depth0],types:["ID","ID","ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("\n          </ul>\n        </div>\n      </div>\n      <div class=\"description\">\n        ");
+  hashContexts = {'unescaped': depth0};
+  hashTypes = {'unescaped': "STRING"};
+  stack2 = helpers._triageMustache.call(depth0, "description", {hash:{
+    'unescaped': ("true")
+  },contexts:[depth0],types:["ID"],hashContexts:hashContexts,hashTypes:hashTypes,data:data});
+  if(stack2 || stack2 === 0) { data.buffer.push(stack2); }
+  data.buffer.push("\n      </div>\n    </section>\n  </div>\n  <div class=\"span3\">\n    <div class=\"well\">\n      asdfasdf\n    </div>\n  </div>\n</div>\n\n");
   return buffer;
   
 });
@@ -2939,7 +3042,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>App Details</h2>\n  <p>\n    Returns information on a single app. This doesn't provide any additional information than what's available in the app list response.\n  </p>\n\n  <code>GET /api/v1/apps/:app_id</code>\n  <pre>{\n  \"id\": \"unique_identifier\",\n  \"name\": \"Human Readable App Name\",\n  // Same as above\n},\n</pre>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">App Details</h2>\n  \n  <p>\n    Returns information on a single app. This doesn't provide any additional information than what's available in the app list response.\n  </p>\n\n  <code>GET /api/v1/apps/:app_id</code>\n  <pre>{\n  \"id\": \"unique_identifier\",\n  \"name\": \"Human Readable App Name\",\n  // Same as above\n},\n</pre>\n</section>");
   
 });
 
@@ -2949,7 +3052,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>App Reviews List</h2>\n  <p>\n    Returns a paginated list of reviews for the specified app. Reviews may have come from multiple sources, including from the site itself using Twitter logins, or from other platforms/apps that have registered. More information on registering an app is available in <a href=\"#contributing\">the \"contributing\" section.</a>\n  </p>\n\n  <code>GET /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"objects\": [\n    {\n      \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n      \"source_name\": \"Human-readable name of platform/app where user posted\",\n      \"tool_name\": \"Human-readable name of the app\",\n      \"rating\": 3, // out of 5\n      \"source_url\": \"http://example.com/platform_or_app/homepage\",\n      \"user_name\": \"User name\",\n      \"user_url\": \"http://example.com/user/profile\",\n      \"id\": 1,\n      \"comments\": \"user-provided comments, if any\",\n      \"created\": \"Jun 19, 2012\"\n    }\n  ],\n  \"meta\": {\n    \"next\": \"http://example.com/more/reviews\"\n  }}\n</pre>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">App Reviews List</h2>\n  \n  <p>\n    Returns a paginated list of reviews for the specified app. Reviews may have come from multiple sources, including from the site itself using Twitter logins, or from other platforms/apps that have registered. More information on registering an app is available in <a href=\"#contributing\">the \"contributing\" section.</a>\n  </p>\n\n  <code>GET /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"objects\": [\n    {\n      \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n      \"source_name\": \"Human-readable name of platform/app where user posted\",\n      \"tool_name\": \"Human-readable name of the app\",\n      \"rating\": 3, // out of 5\n      \"source_url\": \"http://example.com/platform_or_app/homepage\",\n      \"user_name\": \"User name\",\n      \"user_url\": \"http://example.com/user/profile\",\n      \"id\": 1,\n      \"comments\": \"user-provided comments, if any\",\n      \"created\": \"Jun 19, 2012\"\n    }\n  ],\n  \"meta\": {\n    \"next\": \"http://example.com/more/reviews\"\n  }}\n</pre>\n</section>");
   
 });
 
@@ -2959,7 +3062,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>App List</h2>\n  <p>\n    Returns a list of all known apps. Includes some summary information around the number of ratings and comments, as well as all information needed to configure and place the apps in a learning system.\n  </p>\n \n  <code>GET /api/v1/apps</code>\n  <pre class=\"prettyprint\">{\n  \"meta\": \n    {\n      \"next\": \"http://url.for/more/objects/if/any\"\n    },\n  \"objects\": [\n    {\n      \"id\": \"unique_identifier\",\n      \"name\": \"Human Readable App Name\",\n      \"extensions\": [\"multiple\", \"values\"], // possible values: editor_button, resource_selection, user_nav, course_nav, account_nav\n      \"added\": \"2012-03-27T00:00:00Z\",\n      \"avg_rating\": 3.5,\n      \"banner_url\": \"http://example.com/240x125.png\",\n      \"logo_url\": \"http://example.com/72x72.png\",\n      \"launch_url\": \"http://example.com/app.launch\",\n      \"any_key\": true,\n      \"short_description\": \"Short app description\",\n      \"comments_count\": 21,\n      \"ratings_count\": 45,\n      \"preview\": {\n        \"url\":\"/twitter.html\",\n        \"height\":475\n      },\n      \"categories\": [\"list of\", \"human-readable\", \"category names\"],\n      \"levels\": [\"multiple\", \"values\"], // possible values: \"K-6th Grade\", \"7th-12th Grade\", \"Postsecondary\"\n      \"description\": \"Longer app description\",\n      \"config_url\": \"http://more.info/available/below\"\n    },\n    { ... },\n    { ... }\n  ]\n}</pre>\n\n  <h3>Optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>level</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are marked for the \n      specified grade level. The levels are available\n      on the home page, and are \n      <code>all</code>, \n      <code>K-6th Grade</code>, \n      <code>7th-12th Grade</code>, and\n      <code>Postsecondary</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>category</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are categorized for\n      the specified category. The categories are available\n      on the home page, and are\n      <code>all</code>,\n      <code>Community</code>, \n      <code>Content</code>, \n      <code>Math</code>, \n      <code>Open Content</code>, \n      <code>Science</code>, \n      <code>Study Helps</code>, \n      <code>Textbooks/eBooks</code>, and\n      <code>Web 2.0</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>recent</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps have been added in\n      the past 24 weeks. If less than 6 apps have been \n      added in the last 24 weeks, it will go back farther\n      until at least 6 apps are returned.\n      Setting this value to anything other\n      than an empty string will apply the filter.\n      </td>\n    </tr>\n    <tr>\n      <td><code>platform</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that can be used in\n      the specified platform. This is a bit of a placeholder\n      parameter, since right now there are only two\n      options, <code>Canvas</code> and anything other\n      than <code>Canvas</code>. As more apps and extensions\n      are added, more platforms will be explicitly supported.\n      </td>\n    </tr>\n    <tr>\n      <td><code>extension</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that support the\n      specified extension. Available extensions are\n      <code>all</code>, \n      <code>editor_button</code>, \n      <code>resource_selection</code>, \n      <code>user_navigation</code>, and\n      <code>course_navigation</code>\n      </td>\n    </tr></tbody>\n  </table>\n\n  <p>\n    Most of the information is consistent across all apps. <code>preview</code> is an optional value, and there are some possible configuration options listed below:\n  </p>\n\n  <h3>Possible Configuration Return Values</h3>\n  <table class=\"table table-bordered table-striped\">\n            <tbody><tr>\n              <td><code>config_directions</code></td>\n              <td>\n                This app doesn't have a standardized\n                way to configure it, so instead it will return \n                some HTML code containing\n                directions on how to manually configure the app.\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_url</code>\n              </td>\n              <td>\n                <p>\n                  If <code>config_options</code> is not provided, then this is\n                  the url that can be queried to retrieve the XML configuration\n                  for this app.\n                </p>\n                <p>\n                  If <code>config_options</code> is provided, then it will contain\n                  a list of options that can be specified by the user to help\n                  specify app configuration. These options should be appended\n                  to <code>config_url</code> as query parameters. The format of \n                  the options is below.\n                </p>\n<pre>{\n    \"name\": \"query_parameter_key\",\n    \"description\": \"Human-readable description\", \n    \"required\": true,\n    \"type\": \"text\", // possible values: text, checkbox\n    \"value\": \"default_query_parameter_value\"\n},\n{ ... },\n{ ... } \n</pre>\n                <p></p>\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_urls</code></td>\n              <td>\n                <p>This value provides a list of configuration URLs rather than\n                a single configuration URL. <code>config_options</code> can\n                still be specified as with <code>config_url</code>. The format\n                of the URL list is below.\n                </p>\n<pre>{\n  \"url\": \"http://example.com/config.xml\",\n  \"description\": \"Human-readable description\"\n},\n{ ... },\n{ ... }\n</pre>\n              </td>\n            </tr>\n              \n          </tbody></table>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">App List</h2>\n  \n  <p>\n    Returns a list of all known apps. Includes some summary information around the number of ratings and comments, as well as all information needed to configure and place the apps in a learning system.\n  </p>\n \n  <code>GET /api/v1/apps</code>\n  <pre class=\"prettyprint\">{\n  \"meta\": \n    {\n      \"next\": \"http://url.for/more/objects/if/any\"\n    },\n  \"objects\": [\n    {\n      \"id\": \"unique_identifier\",\n      \"name\": \"Human Readable App Name\",\n      \"extensions\": [\"multiple\", \"values\"], // possible values: editor_button, resource_selection, user_nav, course_nav, account_nav\n      \"added\": \"2012-03-27T00:00:00Z\",\n      \"avg_rating\": 3.5,\n      \"banner_url\": \"http://example.com/240x125.png\",\n      \"logo_url\": \"http://example.com/72x72.png\",\n      \"launch_url\": \"http://example.com/app.launch\",\n      \"any_key\": true,\n      \"short_description\": \"Short app description\",\n      \"comments_count\": 21,\n      \"ratings_count\": 45,\n      \"preview\": {\n        \"url\":\"/twitter.html\",\n        \"height\":475\n      },\n      \"categories\": [\"list of\", \"human-readable\", \"category names\"],\n      \"levels\": [\"multiple\", \"values\"], // possible values: \"K-6th Grade\", \"7th-12th Grade\", \"Postsecondary\"\n      \"description\": \"Longer app description\",\n      \"config_url\": \"http://more.info/available/below\"\n    },\n    { ... },\n    { ... }\n  ]\n}</pre>\n\n  <h3>Optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>level</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are marked for the \n      specified grade level. The levels are available\n      on the home page, and are \n      <code>all</code>, \n      <code>K-6th Grade</code>, \n      <code>7th-12th Grade</code>, and\n      <code>Postsecondary</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>category</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filter to only apps that are categorized for\n      the specified category. The categories are available\n      on the home page, and are\n      <code>all</code>,\n      <code>Community</code>, \n      <code>Content</code>, \n      <code>Math</code>, \n      <code>Open Content</code>, \n      <code>Science</code>, \n      <code>Study Helps</code>, \n      <code>Textbooks/eBooks</code>, and\n      <code>Web 2.0</code>\n      </td>\n    </tr>\n    <tr>\n      <td><code>recent</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps have been added in\n      the past 24 weeks. If less than 6 apps have been \n      added in the last 24 weeks, it will go back farther\n      until at least 6 apps are returned.\n      Setting this value to anything other\n      than an empty string will apply the filter.\n      </td>\n    </tr>\n    <tr>\n      <td><code>platform</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that can be used in\n      the specified platform. This is a bit of a placeholder\n      parameter, since right now there are only two\n      options, <code>Canvas</code> and anything other\n      than <code>Canvas</code>. As more apps and extensions\n      are added, more platforms will be explicitly supported.\n      </td>\n    </tr>\n    <tr>\n      <td><code>extension</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>Filters to only apps that support the\n      specified extension. Available extensions are\n      <code>all</code>, \n      <code>editor_button</code>, \n      <code>resource_selection</code>, \n      <code>user_navigation</code>, and\n      <code>course_navigation</code>\n      </td>\n    </tr></tbody>\n  </table>\n\n  <p>\n    Most of the information is consistent across all apps. <code>preview</code> is an optional value, and there are some possible configuration options listed below:\n  </p>\n\n  <h3>Possible Configuration Return Values</h3>\n  <table class=\"table table-bordered table-striped\">\n            <tbody><tr>\n              <td><code>config_directions</code></td>\n              <td>\n                This app doesn't have a standardized\n                way to configure it, so instead it will return \n                some HTML code containing\n                directions on how to manually configure the app.\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_url</code>\n              </td>\n              <td>\n                <p>\n                  If <code>config_options</code> is not provided, then this is\n                  the url that can be queried to retrieve the XML configuration\n                  for this app.\n                </p>\n                <p>\n                  If <code>config_options</code> is provided, then it will contain\n                  a list of options that can be specified by the user to help\n                  specify app configuration. These options should be appended\n                  to <code>config_url</code> as query parameters. The format of \n                  the options is below.\n                </p>\n<pre>{\n    \"name\": \"query_parameter_key\",\n    \"description\": \"Human-readable description\", \n    \"required\": true,\n    \"type\": \"text\", // possible values: text, checkbox\n    \"value\": \"default_query_parameter_value\"\n},\n{ ... },\n{ ... } \n</pre>\n                <p></p>\n              </td>\n            </tr>\n            <tr>\n              <td><code>config_urls</code></td>\n              <td>\n                <p>This value provides a list of configuration URLs rather than\n                a single configuration URL. <code>config_options</code> can\n                still be specified as with <code>config_url</code>. The format\n                of the URL list is below.\n                </p>\n<pre>{\n  \"url\": \"http://example.com/config.xml\",\n  \"description\": \"Human-readable description\"\n},\n{ ... },\n{ ... }\n</pre>\n              </td>\n            </tr>\n              \n          </tbody></table>\n</section>");
   
 });
 
@@ -2969,7 +3072,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Contributing Reviews</h2>\n  <p>\n    Allows adding ratings and reviews from a registered platform or app. Required/optional fields are listed below. For more information on registering an app, please <a href=\"https://twitter.com/whitmer\">contact @whitmer</a>.\n  </p>\n  \n  <code>POST /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n\n  <h3>Required/optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>access_token</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the access token provided by this site to\n      the platform/app after registration. This should be kept secret\n      (i.e. server-side only -- don't put it in your JavaScript), \n      otherwise anyone can post comments and ratings as if they were\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>rating</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is an integer from 1 to 5.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_name</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the human-readable name for the commenting\n      user within\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_id</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the unique identifier for the user.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the public profile URL for the user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_avatar_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the URL to a public avatar image for the\n      commenting user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>comments</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the plaintext comments provided by the user.\n      </td>\n    </tr>\n  </tbody></table>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Contributing Reviews</h2>\n  \n  <p>\n    Allows adding ratings and reviews from a registered platform or app. Required/optional fields are listed below. For more information on registering an app, please <a href=\"https://twitter.com/whitmer\">contact @whitmer</a>.\n  </p>\n  \n  <code>POST /api/v1/apps/:app_id/reviews</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n\n  <h3>Required/optional parameters</h3>\n  <table class=\"table table-bordered table-striped\">\n    <tbody><tr>\n      <td><code>access_token</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the access token provided by this site to\n      the platform/app after registration. This should be kept secret\n      (i.e. server-side only -- don't put it in your JavaScript), \n      otherwise anyone can post comments and ratings as if they were\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>rating</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is an integer from 1 to 5.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_name</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the human-readable name for the commenting\n      user within\n      your platform/app.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_id</code></td>\n      <td><span class=\"label label-success\">required</span></td>\n      <td>This is the unique identifier for the user.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the public profile URL for the user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>user_avatar_url</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the URL to a public avatar image for the\n      commenting user, if any.\n      </td>\n    </tr>\n    <tr>\n      <td><code>comments</code></td>\n      <td><span class=\"label\">optional</span></td>\n      <td>This is the plaintext comments provided by the user.\n      </td>\n    </tr>\n  </tbody></table>\n</section>");
   
 });
 
@@ -2979,7 +3082,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Introduction</h2>\n  <p>\n    All of the information on Edu-Apps.org is programmatically available. You can call the API to get the current information out. You can also help add to the magic by registering your learning platform here. Then not only can your users see the apps and ratings, but they can also post app ratings back to LTI of Magic through your platform. Find out how at the bottom of the page.\n  </p>\n  <p>\n    APIs are cool. This one returns paginated JSON responses. There's no auth required for anything other than posting comments and reviews. All pagination information is included in the JSON response body.\n  </p>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Introduction</h2>\n  \n  <p>\n    All of the information on Edu-Apps.org is programmatically available. You can call the API to get the current information out. You can also help add to the magic by registering your learning platform here. Then not only can your users see the apps and ratings, but they can also post app ratings back to LTI of Magic through your platform. Find out how at the bottom of the page.\n  </p>\n  <p>\n    APIs are cool. This one returns paginated JSON responses. There's no auth required for anything other than posting comments and reviews. All pagination information is included in the JSON response body.\n  </p>\n</section>");
   
 });
 
@@ -2989,7 +3092,7 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
   
 
 
-  data.buffer.push("<section>\n  <h2>Retrieving a Review</h2>\n  <p>\n    You can retrieve a specific review (to see for example if the current user has already reviewed the specified app) by calling. Requires the same <code>user_id</code> and <code>access_token</code> used when posting the review.\n  </p>\n  <code>GET /api/v1/apps/:app_id/reviews/:access_token/:user_id</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n</section>");
+  data.buffer.push("<section>\n  <h2 class=\"page-header\">Retrieving a Review</h2>\n  \n  <p>\n    You can retrieve a specific review (to see for example if the current user has already reviewed the specified app) by calling. Requires the same <code>user_id</code> and <code>access_token</code> used when posting the review.\n  </p>\n  <code>GET /api/v1/apps/:app_id/reviews/:access_token/:user_id</code>\n  <pre>{\n  \"user_avatar_url\": \"http://example.com/user/avatar/50x50.png\",\n  \"source_name\": \"Human-readable name of platform/app where user posted\",\n  // Same as above\n}</pre>\n</section>");
   
 });
 
@@ -12106,6 +12209,982 @@ helpers = helpers || Ember.Handlebars.helpers; data = data || {};
 
 
 })(); 
+});require.register("vendor/ember-model.js", function(module, exports, require, global){
+// Last commit: 145cac5 (2013-06-28 14:11:13 -0500)
+
+
+(function() {
+Ember.Adapter = Ember.Object.extend({
+  find: function(record, id) {
+    throw new Error('Ember.Adapter subclasses must implement find');
+  },
+
+  findQuery: function(klass, records, params) {
+    throw new Error('Ember.Adapter subclasses must implement findQuery');
+  },
+
+  findMany: function(klass, records, ids) {
+    throw new Error('Ember.Adapter subclasses must implement findMany');
+  },
+
+  findAll: function(klass, records) {
+    throw new Error('Ember.Adapter subclasses must implement findAll');
+  },
+
+  load: function(record, id, data) {
+    record.load(id, data);
+  },
+
+  createRecord: function(record) {
+    throw new Error('Ember.Adapter subclasses must implement createRecord');
+  },
+
+  saveRecord: function(record) {
+    throw new Error('Ember.Adapter subclasses must implement saveRecord');
+  },
+
+  deleteRecord: function(record) {
+    throw new Error('Ember.Adapter subclasses must implement deleteRecord');
+  }
+});
+})();
+
+
+
+(function() {
+var get = Ember.get;
+
+Ember.FixtureAdapter = Ember.Adapter.extend({
+  find: function(record, id) {
+    var fixtures = record.constructor.FIXTURES,
+        primaryKey = get(record.constructor, 'primaryKey'),
+        data = Ember.A(fixtures).find(function(el) { return el[primaryKey] === id; });
+
+    if (!record.get('isLoaded')) {
+      setTimeout(function() {
+        Ember.run(record, record.load, id, data);
+      });
+    }
+
+    return record;
+  },
+
+  findMany: function(klass, records, ids) {
+    var fixtures = klass.FIXTURES,
+        requestedData = [];
+
+    for (var i = 0, l = ids.length; i < l; i++) {
+      requestedData.push(fixtures[i]);
+    }
+
+    setTimeout(function() {
+      Ember.run(records, records.load, klass, requestedData);
+    });
+
+    return records;
+  },
+
+  findAll: function(klass, records) {
+    var fixtures = klass.FIXTURES;
+
+    setTimeout(function() {
+      Ember.run(records, records.load, klass, fixtures);
+    });
+
+    return records;
+  },
+
+  createRecord: function(record) {
+    var klass = record.constructor,
+        fixtures = klass.FIXTURES;
+
+    setTimeout(function() {
+      Ember.run(function() {
+        fixtures.push(klass.findFromCacheOrLoad(record.toJSON()));
+        record.didCreateRecord();
+      });
+    });
+
+    return record;
+  },
+
+  saveRecord: function(record) {
+    var deferred = Ember.Deferred.create();
+    deferred.then(function() {
+      record.didSaveRecord();
+    });
+    setTimeout(function() {
+      Ember.run(deferred, deferred.resolve, record);
+    });
+    return deferred;
+  },
+
+  deleteRecord: function(record) {
+    var deferred = Ember.Deferred.create();
+    deferred.then(function() {
+      record.didDeleteRecord();
+    });
+    setTimeout(function() {
+      Ember.run(deferred, deferred.resolve, record);
+    });
+    return deferred;
+  }
+});
+
+})();
+
+
+
+(function() {
+var get = Ember.get,
+    set = Ember.set;
+
+Ember.RecordArray = Ember.ArrayProxy.extend(Ember.Evented, Ember.DeferredMixin, {
+  isLoaded: false,
+  isLoading: Ember.computed.not('isLoaded'),
+
+  load: function(klass, data) {
+    set(this, 'content', this.materializeData(klass, data));
+    this.notifyLoaded();
+  },
+
+  loadForFindMany: function(klass) {
+    var content = get(this, '_ids').map(function(id) { return klass.cachedRecordForId(id); });
+    set(this, 'content', Ember.A(content));
+    this.notifyLoaded();
+  },
+
+  notifyLoaded: function() {
+    set(this, 'isLoaded', true);
+    this.trigger('didLoad');
+    this.resolve(this);
+  },
+
+  materializeData: function(klass, data) {
+    return Ember.A(data.map(function(el) {
+      return klass.findFromCacheOrLoad(el); // FIXME
+    }));
+  }
+});
+
+})();
+
+
+
+(function() {
+var get = Ember.get;
+
+Ember.FilteredRecordArray = Ember.RecordArray.extend({
+  init: function() {
+    if (!get(this, 'modelClass')) {
+      throw new Error('FilteredRecordArrays must be created with a modelClass');
+    }
+    if (!get(this, 'filterFunction')) {
+      throw new Error('FilteredRecordArrays must be created with a filterFunction');
+    }
+    if (!get(this, 'filterProperties')) {
+      throw new Error('FilteredRecordArrays must be created with filterProperties');
+    }
+
+    var modelClass = get(this, 'modelClass');
+    modelClass.registerRecordArray(this);
+
+    this.registerObservers();
+    this.updateFilter();
+  },
+
+  updateFilter: function() {
+    var self = this,
+        results = [];
+    get(this, 'modelClass').forEachCachedRecord(function(record) {
+      if (self.filterFunction(record)) {
+        results.push(record);
+      }
+    });
+    this.set('content', Ember.A(results));
+  },
+
+  updateFilterForRecord: function(record) {
+    var results = get(this, 'content');
+    if (this.filterFunction(record)) {
+      results.pushObject(record);
+    }
+  },
+
+  registerObservers: function() {
+    var self = this;
+    get(this, 'modelClass').forEachCachedRecord(function(record) {
+      self.registerObserversOnRecord(record);
+    });
+  },
+
+  registerObserversOnRecord: function(record) {
+    var self = this,
+        filterProperties = get(this, 'filterProperties');
+
+    for (var i = 0, l = get(filterProperties, 'length'); i < l; i++) {
+      record.addObserver(filterProperties[i], self, 'updateFilterForRecord');
+    }
+  }
+});
+})();
+
+
+
+(function() {
+var get = Ember.get;
+
+Ember.HasManyArray = Ember.RecordArray.extend({
+  _records: null,
+
+  objectAtContent: function(idx) {
+    var klass = get(this, 'modelClass'),
+        content = get(this, 'content');
+
+    if (!content.length) { return; }
+
+    var attrs = content.objectAt(idx);
+
+    // TODO: Create a LazilyMaterializedRecordArray class and test it
+    if (this._records && this._records[idx]) { return this._records[idx]; }
+
+    var record = klass.create();
+
+    if (!this._records) { this._records = {}; }
+    this._records[idx] = record;
+
+    var primaryKey = get(klass, 'primaryKey');
+    record.load(attrs[primaryKey], attrs);
+
+    return record;
+  },
+
+  create: function(attrs) {
+    var klass = get(this, 'modelClass'),
+        record = klass.create(attrs);
+
+    this.pushObject(attrs);
+
+    // TODO: Create a LazilyMaterializedRecordArray class and test it
+    if (!this._records) { this._records = {}; }
+    this._records[get(this, 'length') - 1] = record;
+
+    return record; // FIXME: inject parent's id
+  },
+
+  save: function() {
+    // TODO: loop over dirty records only
+    return Ember.RSVP.all(this.map(function(record) {
+      return record.save();
+    }));
+  }
+});
+
+})();
+
+
+
+(function() {
+var get = Ember.get,
+    set = Ember.set,
+    setProperties = Ember.setProperties,
+    meta = Ember.meta,
+    underscore = Ember.String.underscore;
+
+function contains(array, element) {
+  for (var i = 0, l = array.length; i < l; i++) {
+    if (array[i] === element) { return true; }
+  }
+  return false;
+}
+
+function concatUnique(toArray, fromArray) {
+  var e;
+  for (var i = 0, l = fromArray.length; i < l; i++) {
+    e = fromArray[i];
+    if (!contains(toArray, e)) { toArray.push(e); }
+  }
+  return toArray;
+}
+
+function hasCachedValue(object, key) {
+  var objectMeta = meta(object, false);
+  if (objectMeta) {
+    return key in objectMeta.cache;
+  }
+}
+
+Ember.run.queues.push('data');
+
+Ember.Model = Ember.Object.extend(Ember.Evented, Ember.DeferredMixin, {
+  isLoaded: true,
+  isLoading: Ember.computed.not('isLoaded'),
+  isNew: true,
+  isDeleted: false,
+  _dirtyAttributes: null,
+
+  /**
+    Called when attribute is accessed.
+
+    @method getAttr
+    @param key {String} key which is being accessed
+    @param value {Object} value, which will be returned from getter by default
+  */
+  getAttr: function(key, value) {
+    return value;
+  },
+
+  isDirty: Ember.computed(function() {
+    var attributes = this.attributes,
+        dirtyAttributes = Ember.A(), // just for removeObject
+        key, cachedValue, dataValue, desc, descMeta, type, isDirty;
+
+    for (var i = 0, l = attributes.length; i < l; i++) {
+      key = attributes[i];
+      if (!hasCachedValue(this, key)) { continue; }
+      cachedValue = this.cacheFor(key);
+      dataValue = get(this, 'data.'+this.dataKey(key));
+      desc = meta(this).descs[key];
+      descMeta = desc && desc.meta();
+      type = descMeta.type;
+
+      if (type && type.isEqual) {
+        isDirty = !type.isEqual(dataValue, cachedValue);
+      } else if (dataValue !== cachedValue) {
+        isDirty = true;
+      } else {
+        isDirty = false;
+      }
+
+      if (isDirty) {
+        dirtyAttributes.push(key);
+      }
+    }
+
+    if (dirtyAttributes.length) {
+      this._dirtyAttributes = dirtyAttributes;
+      return true;
+    } else {
+      this._dirtyAttributes = [];
+      return false;
+    }
+  }).property().volatile(),
+
+  dataKey: function(key) {
+    var camelizeKeys = get(this.constructor, 'camelizeKeys');
+    return camelizeKeys ? underscore(key) : key;
+  },
+
+  init: function() {
+    if (!get(this, 'isNew')) { this.resolve(this); }
+    this._super();
+  },
+
+  load: function(id, hash) {
+    var data = {};
+    data[get(this.constructor, 'primaryKey')] = id;
+    set(this, 'data', Ember.merge(data, hash));
+    set(this, 'isLoaded', true);
+    set(this, 'isNew', false);
+    this.trigger('didLoad');
+    this.resolve(this);
+  },
+
+  didDefineProperty: function(proto, key, value) {
+    if (value instanceof Ember.Descriptor) {
+      var meta = value.meta();
+
+      if (meta.isAttribute) {
+        if (!proto.attributes) { proto.attributes = []; }
+        proto.attributes.push(key);
+      }
+    }
+  },
+
+  toJSON: function() {
+    var key, meta,
+        properties = this.getProperties(this.attributes);
+
+    for (key in properties) {
+      meta = this.constructor.metaForProperty(key);
+      if (meta.type && meta.type.serialize) {
+        properties[key] = meta.type.serialize(properties[key]);
+      } else if (meta.type && Ember.Model.dataTypes[meta.type]) {
+        properties[key] = Ember.Model.dataTypes[meta.type].serialize(properties[key]);
+      }
+    }
+
+    if (this.constructor.rootKey) {
+      var json = {};
+      json[this.constructor.rootKey] = properties;
+
+      return json;
+    } else {
+      return properties;
+    }
+  },
+
+  save: function() {
+    var adapter = this.constructor.adapter;
+    set(this, 'isSaving', true);
+    if (get(this, 'isNew')) {
+      return adapter.createRecord(this);
+    } else if (get(this, 'isDirty')) {
+      return adapter.saveRecord(this);
+    } else {
+      var deferred = Ember.Deferred.create();
+      deferred.resolve(this);
+      set(this, 'isSaving', false);
+      return deferred;
+    }
+  },
+
+  reload: function() {
+    return this.constructor.reload(this.get(get(this.constructor, 'primaryKey')));
+  },
+
+  revert: function() {
+    if (this.get('isDirty')) {
+      var data = get(this, 'data'),
+          reverts = {};
+      for (var i = 0; i < this._dirtyAttributes.length; i++) {
+        var attr = this._dirtyAttributes[i];
+        reverts[attr] = data[attr];
+      }
+      setProperties(this, reverts);
+    }
+  },
+
+  didCreateRecord: function() {
+    var primaryKey = get(this.constructor, 'primaryKey'),
+        id = get(this, primaryKey);
+
+    set(this, 'isNew', false);
+
+    if (!this.constructor.recordCache) this.constructor.recordCache = {};
+    this.constructor.recordCache[id] = this;
+
+    this.load(id, this.getProperties(this.attributes));
+    this.constructor.addToRecordArrays(this);
+    this.trigger('didCreateRecord');
+    this.didSaveRecord();
+  },
+
+  didSaveRecord: function() {
+    set(this, 'isSaving', false);
+    this.trigger('didSaveRecord');
+    if (this.get('isDirty')) { this._copyDirtyAttributesToData(); }
+  },
+
+  deleteRecord: function() {
+    return this.constructor.adapter.deleteRecord(this);
+  },
+
+  didDeleteRecord: function() {
+    this.constructor.removeFromRecordArrays(this);
+    set(this, 'isDeleted', true);
+    this.trigger('didDeleteRecord');
+  },
+
+  _copyDirtyAttributesToData: function() {
+    if (!this._dirtyAttributes) { return; }
+    var dirtyAttributes = this._dirtyAttributes,
+        data = get(this, 'data'),
+        key;
+
+    if (!data) {
+      data = {};
+      set(this, 'data', data);
+    }
+    for (var i = 0, l = dirtyAttributes.length; i < l; i++) {
+      // TODO: merge Object.create'd object into prototype
+      key = dirtyAttributes[i];
+      data[this.dataKey(key)] = this.cacheFor(key);
+    }
+    this._dirtyAttributes = [];
+  }
+});
+
+Ember.Model.reopenClass({
+  primaryKey: 'id',
+
+  adapter: Ember.Adapter.create(),
+
+  find: function(id) {
+    if (!arguments.length) {
+      return this.findAll();
+    } else if (Ember.isArray(id)) {
+      return this.findMany(id);
+    } else if (typeof id === 'object') {
+      return this.findQuery(id);
+    } else {
+      return this.findById(id);
+    }
+  },
+
+  findMany: function(ids) {
+    Ember.assert("findMany requires an array", Ember.isArray(ids));
+
+    var records = Ember.RecordArray.create({_ids: ids});
+
+    if (!this.recordArrays) { this.recordArrays = []; }
+    this.recordArrays.push(records);
+
+    if (this._currentBatchIds) {
+      concatUnique(this._currentBatchIds, ids);
+      this._currentBatchRecordArrays.push(records);
+    } else {
+      this._currentBatchIds = concatUnique([], ids);
+      this._currentBatchRecordArrays = [records];
+    }
+
+    Ember.run.scheduleOnce('data', this, this._executeBatch);
+
+    return records;
+  },
+
+  findAll: function() {
+    if (this._findAllRecordArray) { return this._findAllRecordArray; }
+
+    var records = this._findAllRecordArray = Ember.RecordArray.create();
+
+    this.adapter.findAll(this, records);
+
+    return records;
+  },
+
+  _currentBatchIds: null,
+  _currentBatchRecordArrays: null,
+
+  findById: function(id) {
+    var record = this.cachedRecordForId(id);
+
+    if (!get(record, 'isLoaded')) {
+      this._fetchById(record, id);
+    }
+    return record;
+  },
+
+  reload: function(id) {
+    var record = this.cachedRecordForId(id);
+
+    this._fetchById(record, id);
+
+    return record;
+  },
+
+  _fetchById: function(record, id) {
+    var adapter = get(this, 'adapter');
+
+    if (adapter.findMany) {
+      if (this._currentBatchIds) {
+        if (!contains(this._currentBatchIds, id)) { this._currentBatchIds.push(id); }
+      } else {
+        this._currentBatchIds = [id];
+        this._currentBatchRecordArrays = [];
+      }
+
+      Ember.run.scheduleOnce('data', this, this._executeBatch);
+    } else {
+      adapter.find(record, id);
+    }
+  },
+
+  _executeBatch: function() {
+    var batchIds = this._currentBatchIds,
+        batchRecordArrays = this._currentBatchRecordArrays,
+        self = this,
+        requestIds = [],
+        recordOrRecordArray,
+        i;
+
+    this._currentBatchIds = null;
+    this._currentBatchRecordArrays = null;
+
+    for (i = 0; i < batchIds.length; i++) {
+      if (!this.cachedRecordForId(batchIds[i]).get('isLoaded')) {
+        requestIds.push(batchIds[i]);
+      }
+    }
+
+    if (batchIds.length === 1) {
+      recordOrRecordArray = get(this, 'adapter').find(this.cachedRecordForId(batchIds[0]), batchIds[0]);
+    } else {
+      recordOrRecordArray = Ember.RecordArray.create({_ids: batchIds});
+
+      if (requestIds.length === 0) {
+        recordOrRecordArray.notifyLoaded();
+      } else {
+        get(this, 'adapter').findMany(this, recordOrRecordArray, requestIds);
+      }
+    }
+
+    recordOrRecordArray.then(function() {
+      for (var i = 0, l = batchRecordArrays.length; i < l; i++) {
+        batchRecordArrays[i].loadForFindMany(self);
+      }
+    });
+  },
+
+  findQuery: function(params) {
+    var records = Ember.RecordArray.create();
+
+    this.adapter.findQuery(this, records, params);
+
+    return records;
+  },
+
+  cachedRecordForId: function(id) {
+    if (!this.recordCache) { this.recordCache = {}; }
+    var record;
+
+    if (this.recordCache[id]) {
+      record = this.recordCache[id];
+    } else {
+      record = this.create({isLoaded: false});
+      var sideloadedData = this.sideloadedData && this.sideloadedData[id];
+      if (sideloadedData) {
+        record.load(id, sideloadedData);
+      }
+      this.recordCache[id] = record;
+    }
+
+    return record;
+  },
+
+  addToRecordArrays: function(record) {
+    if (this._findAllRecordArray) {
+      this._findAllRecordArray.pushObject(record);
+    }
+    if (this.recordArrays) {
+      this.recordArrays.forEach(function(recordArray) {
+        if (recordArray instanceof Ember.FilteredRecordArray) {
+          recordArray.registerObserversOnRecord(record);
+          recordArray.updateFilter();
+        } else {
+          recordArray.pushObject(record);
+        }
+      });
+    }
+  },
+
+  removeFromRecordArrays: function(record) {
+    if (this._findAllRecordArray) {
+      this._findAllRecordArray.removeObject(record);
+    }
+    if (this.recordArrays) {
+      this.recordArrays.forEach(function(recordArray) {
+        recordArray.removeObject(record);
+      });
+    }
+  },
+
+  // FIXME
+  findFromCacheOrLoad: function(data) {
+    var record;
+    if (!data[get(this, 'primaryKey')]) {
+      record = this.create({isLoaded: false});
+    } else {
+      record = this.cachedRecordForId(data[get(this, 'primaryKey')]);
+    }
+    // set(record, 'data', data);
+    record.load(data[get(this, 'primaryKey')], data);
+    return record;
+  },
+
+  registerRecordArray: function(recordArray) {
+    if (!this.recordArrays) { this.recordArrays = []; }
+    this.recordArrays.push(recordArray);
+  },
+
+  unregisterRecordArray: function(recordArray) {
+    if (!this.recordArrays) { return; }
+    Ember.A(this.recordArrays).removeObject(recordArray);
+  },
+
+  forEachCachedRecord: function(callback) {
+    if (!this.recordCache) { return Ember.A([]); }
+    var ids = Object.keys(this.recordCache);
+    ids.map(function(id) {
+      return this.recordCache[id];
+    }, this).forEach(callback);
+  },
+
+  load: function(hashes) {
+    if (!this.sideloadedData) { this.sideloadedData = {}; }
+    for (var i = 0, l = hashes.length; i < l; i++) {
+      var hash = hashes[i];
+      this.sideloadedData[hash[get(this, 'primaryKey')]] = hash;
+    }
+  }
+});
+
+})();
+
+
+
+(function() {
+var get = Ember.get;
+
+Ember.hasMany = function(klassOrString, key) {
+  return Ember.computed(function() {
+    var klass;
+
+    if (typeof klassOrString === "string") {
+      klass = Ember.get(Ember.lookup, klassOrString);
+    } else {
+      klass = klassOrString;
+    }
+
+    return Ember.HasManyArray.create({
+      parent: this,
+      modelClass: klass,
+      content: get(this, 'data.' + key)
+    });
+  }).property();
+};
+
+})();
+
+
+
+(function() {
+var get = Ember.get,
+    set = Ember.set,
+    meta = Ember.meta;
+
+function wrapObject(value) {
+  if (Ember.isArray(value)) {
+    var clonedArray = value.slice();
+
+    // TODO: write test for recursive cloning
+    for (var i = 0, l = clonedArray.length; i < l; i++) {
+      clonedArray[i] = wrapObject(clonedArray[i]);
+    }
+
+    return Ember.A(clonedArray);
+  } else if (value && value.constructor === Date) {
+    return new Date(value.toISOString());
+  } else if (value && typeof value === "object") {
+    var clone = Ember.create(value), property;
+
+    for (property in value) {
+      if (value.hasOwnProperty(property) && typeof value[property] === "object") {
+        clone[property] = wrapObject(value[property]);
+      }
+    }
+    return clone;
+  } else {
+    return value;
+  }
+}
+
+Ember.Model.dataTypes = {};
+
+Ember.Model.dataTypes[Date] = {
+  deserialize: function(string) {
+    if(!string) { return null; }
+    return new Date(string);
+  },
+  serialize: function (date) {
+    if(!date) { return null; }
+    return date.toISOString();
+  }
+};
+
+Ember.Model.dataTypes[Number] = {
+  deserialize: function(string) {
+    if (!string && string !== 0) { return null; }
+    return Number(string);
+  },
+  serialize: function (number) {
+    if (!number && number !== 0) { return null; }
+    return Number(number);
+  }
+};
+
+function deserialize(value, type) {
+  if (type && type.deserialize) {
+    return type.deserialize(value);
+  } else if (type && Ember.Model.dataTypes[type]) {
+    return Ember.Model.dataTypes[type].deserialize(value);
+  } else {
+    return wrapObject(value);
+  }
+}
+
+
+Ember.attr = function(type) {
+  return Ember.computed(function(key, value) {
+    var data = get(this, 'data'),
+        dataKey = this.dataKey(key),
+        dataValue = data && get(data, dataKey),
+        beingCreated = meta(this).proto === this;
+
+    if (arguments.length === 2) {
+      if (beingCreated && !data) {
+        data = {};
+        set(this, 'data', data);
+        data[dataKey] = value;
+      }
+      return wrapObject(value);
+    }
+
+    return this.getAttr(key, deserialize(dataValue, type));
+  }).property('data').meta({isAttribute: true, type: type});
+};
+
+})();
+
+
+
+(function() {
+var get = Ember.get;
+
+Ember.RESTAdapter = Ember.Adapter.extend({
+  find: function(record, id) {
+    var url = this.buildURL(record.constructor, id),
+        self = this;
+
+    return this.ajax(url).then(function(data) {
+      self.didFind(record, id, data);
+    });
+  },
+
+  didFind: function(record, id, data) {
+    var rootKey = get(record.constructor, 'rootKey'),
+        dataToLoad = rootKey ? data[rootKey] : data;
+
+    record.load(id, dataToLoad);
+  },
+
+  findAll: function(klass, records) {
+    var url = this.buildURL(klass),
+        self = this;
+
+    return this.ajax(url).then(function(data) {
+      self.didFindAll(klass, records, data);
+    });
+  },
+
+  didFindAll: function(klass, records, data) {
+    var collectionKey = get(klass, 'collectionKey'),
+        dataToLoad = collectionKey ? data[collectionKey] : data;
+
+    records.load(klass, dataToLoad);
+  },
+
+  findQuery: function(klass, records, params) {
+    var url = this.buildURL(klass),
+        self = this;
+
+    return this.ajax(url, params).then(function(data) {
+      self.didFindQuery(klass, records, params, data);
+    });
+  },
+
+  didFindQuery: function(klass, records, params, data) {
+      var collectionKey = get(klass, 'collectionKey'),
+          dataToLoad = collectionKey ? data[collectionKey] : data;
+
+      records.load(klass, dataToLoad);
+  },
+
+  createRecord: function(record) {
+    var url = this.buildURL(record.constructor),
+        self = this;
+
+    return this.ajax(url, record.toJSON(), "POST").then(function(data) {
+      self.didCreateRecord(record, data);
+    });
+  },
+
+  didCreateRecord: function(record, data) {
+    var rootKey = get(record.constructor, 'rootKey'),
+        primaryKey = get(record.constructor, 'primaryKey'),
+        dataToLoad = rootKey ? data[rootKey] : data;
+
+    record.load(dataToLoad[primaryKey], dataToLoad);
+    record.didCreateRecord();
+  },
+
+  saveRecord: function(record) {
+    var primaryKey = get(record.constructor, 'primaryKey'),
+        url = this.buildURL(record.constructor, get(record, primaryKey)),
+        self = this;
+
+    return this.ajax(url, record.toJSON(), "PUT").then(function(data) {  // TODO: Some APIs may or may not return data
+      self.didSaveRecord(record, data);
+    });
+  },
+
+  didSaveRecord: function(record, data) {
+    record.didSaveRecord();
+  },
+
+  deleteRecord: function(record) {
+    var primaryKey = get(record.constructor, 'primaryKey'),
+        url = this.buildURL(record.constructor, get(record, primaryKey)),
+        self = this;
+
+    return this.ajax(url, record.toJSON(), "DELETE").then(function(data) {  // TODO: Some APIs may or may not return data
+      self.didDeleteRecord(record, data);
+    });
+  },
+
+  didDeleteRecord: function(record, data) {
+    record.didDeleteRecord();
+  },
+
+  ajax: function(url, params, method) {
+    return this._ajax(url, params, method || "GET");
+  },
+
+  buildURL: function(klass, id) {
+    var urlRoot = get(klass, 'url');
+    if (!urlRoot) { throw new Error('Ember.RESTAdapter requires a `url` property to be specified'); }
+
+    if (id) {
+      return urlRoot + "/" + id + ".json";
+    } else {
+      return urlRoot + ".json";
+    }
+  },
+
+  _ajax: function(url, params, method) {
+    var settings = {
+      url: url,
+      type: method,
+      dataType: "json"
+    };
+
+    return new Ember.RSVP.Promise(function(resolve, reject) {
+      if (params) {
+        if (method === "GET") {
+          settings.data = params;
+        } else {
+          settings.contentType = "application/json; charset=utf-8";
+          settings.data = JSON.stringify(params);
+        }
+      }
+
+      settings.success = function(json) {
+        Ember.run(null, resolve, json);
+      };
+
+      settings.error = function(jqXHR, textStatus, errorThrown) {
+        Ember.run(null, reject, jqXHR);
+      };
+
+
+      Ember.$.ajax(settings);
+   });
+  }
+});
+
+})();
+
+
 });require.register("vendor/ember-validations.js", function(module, exports, require, global){
 (function() {
   Ember.Validations = Ember.Namespace.create({

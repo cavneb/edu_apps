@@ -12,6 +12,12 @@
   margin-top: 5px;
 }
 
+.navbar .nav > .active > a, .navbar .nav > .active > a:hover, .navbar .nav > .active > a:focus {
+  box-shadow:           none;
+  -moz-box-shadow:      none;
+  -webkit-box-shadow:   none;
+}
+
 $bg-grey: #eee;
 
 #header {
@@ -29,10 +35,18 @@ $bg-grey: #eee;
   }
 }
 
+hr {
+  border-color: rgb(219, 219, 219);
+  height: 1px;
+}
+
 #content {
   min-width: 970px;
   padding-top: 86px;
   section {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 20px;
+
     h2,h3,h4 {
       margin-top: 0px;
     }
@@ -40,6 +54,10 @@ $bg-grey: #eee;
   table.table th {
     font-weight: normal;
     color: rgb(202, 202, 202);
+  }
+  p {
+    line-height: 22px;
+    margin-bottom: 15px;
   }
 }
 
@@ -55,7 +73,6 @@ footer#footer {
        width: -moz-fit-content;
             width: fit-content;
     margin: 0 auto;
-    margin: 0px auto;
     li {
       margin: 0 15px;
       text-align: center;
@@ -173,6 +190,111 @@ form {
   }
 
 }
+
+
+
+#apps-container {
+  list-style: none;
+  margin-left: 45px;
+
+  li {
+    -webkit-box-shadow: 0 8px 6px -6px rgba(0,0,0,0.6);
+       -moz-box-shadow: 0 8px 6px -6px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 6px -6px rgba(0,0,0,0.6);
+    position: relative;
+    background: #fffceb;
+    color: #333;
+
+    float: left;
+    display: block;
+    width: 200px;
+    margin: 0 15px 38px 0;
+    border: 1px solid #ccc;
+    height: 220px;
+    
+    div.banner {
+      background-color: #fff;
+      padding: 5px;
+      text-align: center;
+    }
+
+    h4.name {
+      background-color: #fff;
+      text-align: center;
+      margin: 0px;
+      padding: 0 5px;
+      line-height: 24px;
+      font-size: 13px;
+      border-top: 1px solid #efefef;
+      border-bottom: 1px solid #efefef;
+    }
+
+    &:hover {
+      h4.name {
+        color: $linkColor;
+      }
+    }
+
+    p.short-description {
+      padding: 5px;
+      font-size: 12px;
+      line-height: 15px;
+    }
+
+    a {
+      color: #333;
+      &:hover {
+        text-decoration: none;
+      }
+    }
+
+    div.meta {
+      border: 1px solid #ccc;
+      border-top: 0px;
+      background-color: #fff;
+      -webkit-box-shadow: 0 8px 6px -6px rgba(0,0,0,0.3);
+         -moz-box-shadow: 0 8px 6px -6px rgba(0,0,0,0.3);
+              box-shadow: 0 8px 6px -6px rgba(0,0,0,0.3);
+      position: absolute;
+      bottom: -28px;
+      left: 5px;
+      right: 5px;
+      padding: 3px 6px;
+      font-weight: 300;
+      color: #eee;
+    }
+  }
+}
+
+.app-details {
+  h2 {
+    margin: 0px;
+  }
+  small.author {
+    font-size: 13px;
+    color: #666;
+  }
+  div.description {
+    margin-top: 20px;
+  }
+  ul.tags {
+    margin: 10px 0px;
+    padding: 0px;
+    list-style: none;
+
+    li {
+      display: block;
+      color: #fff;
+      background-color: red;
+      float: left;
+      margin: 0 3px 3px 0;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+  }
+}
+
+
 
 
 // Flash

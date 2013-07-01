@@ -2,7 +2,6 @@ var FlashController = Ember.ObjectController.extend({
   content: null,
 
   hide: function() {
-    console.log("hiding...");
     $('#flash-view').css({
       top: "85px"
     }).animate({
@@ -19,7 +18,7 @@ var FlashController = Ember.ObjectController.extend({
         opacity: "toggle",
         top: "+=135px"
       }, 500);
-      setTimeout(this.hide, 4000);
+      setTimeout(this.hide, 2000);
     }
   }.observes('content')
 

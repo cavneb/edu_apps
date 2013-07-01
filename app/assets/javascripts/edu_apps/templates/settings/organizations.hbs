@@ -9,9 +9,14 @@
       {{#each membership in controller}}
       <tr>
         <td>{{#linkTo 'settings.organizations_show' membership}}{{membership.organization.name}}{{/linkTo}}</td>
+        <td>{{membership.organization.userCount}} members</td>
         <td>
           <a href="#" {{action "deleteMembership" membership}} class="btn btn-mini pull-right">Leave</a>
         </td>
+      </tr>
+      {{else}}
+      <tr>
+        <td>You are not a member of any organizations yet. You can either create an organization or be invited to one.</td>
       </tr>
       {{/each}}
     </tbody>

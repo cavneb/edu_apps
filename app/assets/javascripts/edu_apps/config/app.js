@@ -3,6 +3,7 @@ require('../vendor/jquery.cookie');
 require('../vendor/handlebars');
 require('../vendor/ember');
 require('../vendor/ember-data');
+require('../vendor/ember-model');
 require('../vendor/ember-validations');
 
 Ember.TESTING_DEPRECATION = true;

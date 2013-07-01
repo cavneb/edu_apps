@@ -7,11 +7,14 @@
         <div class="navbar-inner">
           {{#linkTo "index" class="brand"}}Edu Apps{{/linkTo}}
 
-          <ul class="nav nav-pills pull-right">
+          <ul class="nav nav-pills" style="margin-left: 208px; width: -webkit-fit-content; width: -moz-fit-content; width: fit-content;">
             {{#view App.NavView}}{{#linkTo 'apps'}}Apps{{/linkTo}}{{/view}}
             {{#view App.NavView}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/view}}
             {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
             {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
+          </ul>
+
+          <ul class="nav nav-pills pull-right">
             {{#if userLoggedIn}}
               {{#view App.NavView}}{{#linkTo "settings"}}Settings{{/linkTo}}{{/view}}
               <li><a href="#" {{action "logout" on="click"}}>Logout</a></li>

@@ -18,6 +18,7 @@ var ApplicationRoute = Ember.Route.extend({
     this.controllerFor('categories').set('model', Category.find());
     this.controllerFor('education_levels').set('model', EducationLevel.find());
     this.controllerFor('apps.index').set('model', LtiApp.find());
+    window.APPS = this.controllerFor('apps.index').get('model');
   },
 
   events: {
@@ -42,7 +43,7 @@ var ApplicationRoute = Ember.Route.extend({
         attemptedTransition.retry();
         loginController.set('attemptedTransition', null);
       } else {
-        self.transitionToRoute('apps');
+        this.transitionTo('apps');
       }
     },
 
