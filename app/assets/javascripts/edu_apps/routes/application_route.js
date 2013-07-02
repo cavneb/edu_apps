@@ -15,8 +15,8 @@ var ApplicationRoute = Ember.Route.extend({
 
   setupController: function(controller, currentUser) {
     controller.set('model', currentUser);
-    this.controllerFor('categories').set('model', Category.find());
-    this.controllerFor('education_levels').set('model', EducationLevel.find());
+    // this.controllerFor('categories').set('model', Category.find());
+    // this.controllerFor('education_levels').set('model', EducationLevel.find());
     this.controllerFor('apps.index').set('model', LtiApp.find());
     window.APPS = this.controllerFor('apps.index').get('model');
   },

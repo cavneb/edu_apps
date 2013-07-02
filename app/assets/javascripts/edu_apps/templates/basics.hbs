@@ -2,10 +2,10 @@
   <div class="span3">
     <div data-spy="affix" data-offset-top="0">
       <ul class="nav nav-list">
-        {{#view App.NavView}}{{#linkTo 'basics.index'}}Introduction{{/linkTo}}{{/view}}
-        {{#view App.NavView}}{{#linkTo 'basics.building_an_lti_app'}}Building an LTI App{{/linkTo}}{{/view}}
-        {{#view App.NavView}}{{#linkTo 'basics.post_parameters'}}POST Parameters{{/linkTo}}{{/view}}
-        {{#view App.NavView}}{{#linkTo 'basics.other_resources'}}Other Resources{{/linkTo}}{{/view}}
+        {{#nav}}{{#linkTo 'basics.index'}}Introduction{{/linkTo}}{{/nav}}
+        {{#nav}}{{#linkTo 'basics.building_an_lti_app'}}Building an LTI App{{/linkTo}}{{/nav}}
+        {{#nav}}{{#linkTo 'basics.post_parameters'}}POST Parameters{{/linkTo}}{{/nav}}
+        {{#nav}}{{#linkTo 'basics.other_resources'}}Other Resources{{/linkTo}}{{/nav}}
       </ul>
     </div>
   </div>

@@ -13,17 +13,7 @@ var LtiApp = Ember.Model.extend({
   created_at:           Ember.attr(),
   updated_at:           Ember.attr(),
   cartridge:            Ember.attr(),
-
-  // This is very messy and should be refactored
-  extensions: function() {
-    var results = [];
-    this.get('cartridge.extensions').getEach('property').forEach(function(lst) {
-      $.each(lst, function(idx, item) { 
-        results.push(item);
-      });
-    });
-    return results;
-  }.property('cartridge.extensions.@each')
+  tags:                 Ember.attr()
 });
 
 LtiApp.adapter = Ember.RESTAdapter.create();

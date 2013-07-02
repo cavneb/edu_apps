@@ -8,18 +8,18 @@
           {{#linkTo "index" class="brand"}}Edu Apps{{/linkTo}}
 
           <ul class="nav nav-pills" style="margin-left: 208px; width: -webkit-fit-content; width: -moz-fit-content; width: fit-content;">
-            {{#view App.NavView}}{{#linkTo 'apps'}}Apps{{/linkTo}}{{/view}}
-            {{#view App.NavView}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/view}}
-            {{#view App.NavView}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/view}}
-            {{#view App.NavView}}<a href="#">Submit</a>{{/view}}
+            {{#nav}}{{#linkTo 'apps'}}Apps{{/linkTo}}{{/nav}}
+            {{#nav}}{{#linkTo 'tutorials'}}Tutorials{{/linkTo}}{{/nav}}
+            {{#nav}}{{#linkTo 'docs'}}Docs{{/linkTo}}{{/nav}}
+            {{#nav}}<a href="#">Submit</a>{{/nav}}
           </ul>
 
           <ul class="nav nav-pills pull-right">
             {{#if userLoggedIn}}
-              {{#view App.NavView}}{{#linkTo "settings"}}Settings{{/linkTo}}{{/view}}
+              {{#nav}}{{#linkTo "settings"}}Settings{{/linkTo}}{{/nav}}
               <li><a href="#" {{action "logout" on="click"}}>Logout</a></li>
             {{else}}
-              {{#view App.NavView}}{{#linkTo "session.login"}}Login{{/linkTo}}{{/view}}
+              {{#nav}}{{#linkTo "session.login"}}Login{{/linkTo}}{{/nav}}
             {{/if}}
           </ul>
         </div>

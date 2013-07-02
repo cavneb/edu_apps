@@ -8,10 +8,9 @@
         <div class="span7">
           <h2>{{name}}</h2>
           <small class="author">by {{#linkTo 'apps'}}{{author_name}}{{/linkTo}}</small>
-          
           <ul class="tags">
-            {{#each extension in extensions}}
-            <li>{{extension.content}}</li>
+            {{#each tag in tags}}
+              <li {{bindAttr class="tag.context"}}>{{tag.name}}</li>
             {{/each}}
           </ul>
         </div>

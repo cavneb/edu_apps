@@ -5,6 +5,22 @@ namespace :import do
     failure = 0
     data = JSON.parse(File.read("#{Rails.root}/public/data/app_export.json"))
     data.each do |node|
+
+      extension_map = {}
+      Tag.extensions.each do |t|
+        extension_map[t.short_name] = t
+      end
+
+      category_map = {}
+      Tag.categories.each do |t|
+        category_map[t.name] = t
+      end
+
+      education_level_map = {}
+      Tag.education_levels.each do |t|
+        education_level_map[t.name] = t
+      end
+
       app = LtiApp.new
       app.user_id              = 1 # hardcoded for now
       app.name                 = node['name']
@@ -20,6 +36,25 @@ namespace :import do
       app.icon_image_url       = node['icon_url']
       app.cartridge            = node['cartridge']
       if app.save
+
+        if node['extensions'].is_a? Array
+          node['extensions'].each do |val|
+            app.tags << extension_map[val]
+          end
+        end
+
+        if node['categories'].is_a? Array
+          node['categories'].each do |val|
+            app.tags << category_map[val]
+          end
+        end
+
+        if node['levels'].is_a? Array
+          node['levels'].each do |val|
+            app.tags << education_level_map[val]
+          end
+        end
+
         success += 1
       else
         failure += 1

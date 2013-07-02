@@ -4,9 +4,9 @@
       <div class="span3">
         <div data-spy="affix" data-offset-top="0">
           <ul class="nav nav-list">
-            {{#view App.NavView}}{{#linkTo 'settings.profile'}}Profile{{/linkTo}}{{/view}}
-            {{#view App.NavView}}{{#linkTo 'settings.account_settings'}}Account Settings{{/linkTo}}{{/view}}
-            {{#view App.NavView}}{{#linkTo 'settings.organizations'}}Organizations{{/linkTo}}{{/view}}
+            {{#nav}}{{#linkTo 'settings.profile'}}Profile{{/linkTo}}{{/nav}}
+            {{#nav}}{{#linkTo 'settings.account_settings'}}Account Settings{{/linkTo}}{{/nav}}
+            {{#nav}}{{#linkTo 'settings.organizations'}}Organizations{{/linkTo}}{{/nav}}
           </ul>
         </div>
       </div>

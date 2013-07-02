@@ -290,6 +290,12 @@ form {
       margin: 0 3px 3px 0;
       padding: 0 8px;
       font-size: 12px;
+
+      &.extension { background-color: #d5a76f; }
+      &.tag { background-color: #6abcda;}
+      &.category { background-color: #a1ddbd;}
+      &.education-level { background-color: #fd6737;}
+      &.platform { background-color: #49509a;}
     }
   }
 }

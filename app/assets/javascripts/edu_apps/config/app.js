@@ -8,7 +8,7 @@ require('../vendor/ember-validations');
 
 Ember.TESTING_DEPRECATION = true;
 
-var App = Ember.Application.create({ LOG_TRANSITIONS: true });
+var App = window.App = Ember.Application.create({ LOG_TRANSITIONS: true });
 App.Store = require('./store');
 
 module.exports = App;
