@@ -10,6 +10,8 @@ gem 'jquery-rails'
 gem 'active_model_serializers'
 gem 'bcrypt-ruby', '~> 3.0.0' # Use ActiveModel has_secure_password
 
+gem 'thin'
+
 group :development, :test do
   gem 'rspec-rails', '~> 2.0'
   gem 'pry'

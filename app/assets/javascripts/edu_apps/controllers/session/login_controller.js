@@ -1,18 +1,24 @@
 var SessionLoginController = Ember.Controller.extend({
-
-  clearToken: function() {
-    $.removeCookie("token");
-  },
+  needs: ['application'],
 
   reset: function() {
-    this.setProperties({ email: '', password: '' });
+    this.setProperties({ email: 'cavneb@gmail.com', password: 'tanner' });
   },
 
-  token: $.cookie("token"),
-  
-  tokenChanged: function() {
-    $.cookie("token", this.get('token'), { expires: 1 })
-  }.observes('token')
+  login: function() {
+    var self = this;
+    var data = this.getProperties('email', 'password');
+    var applicationController = this.get('controllers.application');
+
+    $.post('/api/v1/users/authenticate', data, function(resp) {
+      if (resp.token) {
+        self.send('loginWithToken', resp.token);
+      } else {
+        self.send('showFlash', 'error', 'Invalid username and/or password');
+      }
+    });
+
+  }
 
 });
 

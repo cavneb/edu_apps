@@ -5,7 +5,6 @@ var SettingsOrganizationsNewController = Ember.ObjectController.extend({
     form = this.get('model');
 
     var data = form.getProperties('name');
-    data.access_token = $.cookie("token");
 
     var request = $.ajax({
       type: 'POST',

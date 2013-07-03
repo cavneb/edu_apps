@@ -1,6 +1,7 @@
 module Api
   module V1
     class MembershipsController < Api::BaseController
+      before_filter :restrict_access
       
       def index
         user = current_user

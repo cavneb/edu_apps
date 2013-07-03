@@ -1,3 +1,5 @@
+require 'oauth_helper'
+
 module Api
   class BaseController < ApplicationController
 
@@ -8,14 +10,16 @@ module Api
       head :unauthorized unless current_user
     end
 
+    def current_context
+      ApiKey.context_for(token)
+    end
+
     def current_user
-      user = User.where(id: session[:user_id]).first
-      if user
-        return user
-      else
-        session[:user_id] = nil
-        return nil
-      end
+      ApiKey.user_for(token)
+    end
+
+    def token
+      OauthHelper.parse_token(request.headers)
     end
   end
 end

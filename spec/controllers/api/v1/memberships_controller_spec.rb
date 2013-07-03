@@ -2,8 +2,8 @@ require 'spec_helper'
 
 describe Api::V1::MembershipsController do
   before(:each) do
-    session[:user_id] = nil
     @user = User.create!(name: 'Foo User', email: 'foo@example.com', password: 'secret', password_confirmation: 'secret')
+    @session_api_key = @user.generate_session_api_key
     @org1 = Organization.create(name: 'Organization 1')
     @org2 = Organization.create(name: 'Organization 2')
     @org3 = Organization.create(name: 'Organization 3')
@@ -19,13 +19,13 @@ describe Api::V1::MembershipsController do
     end
 
     it "with invalid access token" do
-      get 'index', { 'access_token' => '12345' }
+      get 'index', { 'access_token' => '12345' }, { 'Authorization' => "Bearer 12345" }
       response.code.should == '401'
     end
 
     it "with valid access token" do
       session[:user_id] = @user.id
-      get 'index', { 'access_token' => @user.access_token }
+      get 'index', {}, { 'Authorization' => "Bearer #{@session_api_key.access_token}" }
       json = JSON.parse(response.body)
       puts json.inspect
       json['memberships'].size.should == 3
@@ -39,13 +39,13 @@ describe Api::V1::MembershipsController do
     end
 
     it "with invalid access token" do
-      post 'create_organization', { 'access_token' => '12345' }
+      post 'create_organization', {}, { 'Authorization' => "Bearer 12345" }
       response.code.should == '401'
     end
 
     it "without an organization name" do
       session[:user_id] = @user.id
-      post 'create_organization', { 'access_token' => @user.access_token }
+      post 'create_organization', {}, { 'Authorization' => "Bearer #{@session_api_key.access_token}" }
       json = JSON.parse(response.body)
       puts json.inspect
       json['errors']['name'].should include "can't be blank"
@@ -53,12 +53,11 @@ describe Api::V1::MembershipsController do
 
     it "with valid data" do
       session[:user_id] = @user.id
-      post 'create_organization', { 'access_token' => @user.access_token, name: 'My Organization' }
+      post 'create_organization', { name: 'My Organization' }, { 'Authorization' => "Bearer #{@session_api_key.access_token}" }
       json = JSON.parse(response.body)
       puts json.inspect
       json['membership']['is_admin'].should be_true
       json['membership']['organization_id'].should > 0
-      json['membership']['organization_name'].should == 'My Organization'
     end
   end
 end

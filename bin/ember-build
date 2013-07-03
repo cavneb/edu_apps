@@ -1,3 +1,6 @@
 #!/bin/bash
 
-fsmonitor -p -d app/assets/javascripts/edu_apps '!index.js' '!templates.js' '!application.js' ember build
+fsmonitor -p -d app/assets/javascripts/edu_apps '!index.js' '!templates.js' '!application.js' ember build -d
+
+# fsmonitor -p -d app/js '!index.js' '!templates.js' '!application.js*' ember build -o public/javascripts/application.js &
+# fsmonitor -p -d app/less lessc --line-numbers=comments app/less/main.less public/stylesheets/application.css

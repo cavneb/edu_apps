@@ -1,10 +1,8 @@
 var User = require('../../models/user');
 
 var SessionRegisterRoute = Ember.Route.extend({
-  model: function() {
-    user = User.createRecord();
-    // this.controllerFor('debug').set('model', user);
-    return user;
+  setupController: function(controller, model) {
+    controller.set('model', User.create());
   }
 });
 

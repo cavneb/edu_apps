@@ -1,4 +1,5 @@
 var LtiApp = Ember.Model.extend({
+  id:                   Ember.attr(),
   name:                 Ember.attr(),
   short_name:           Ember.attr(),
   short_description:    Ember.attr(),

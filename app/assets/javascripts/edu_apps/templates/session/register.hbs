@@ -23,9 +23,9 @@
             {{input type="password" value=password placeholder="Password"}}
             <small class="below">{{errors.password}}</small>
           </div>
-          <div {{bindAttr class=":controls errors.passwordConfirmation:error"}}>
-            {{input type="password" value=passwordConfirmation placeholder="Confirm Password"}}
-            <small class="below">{{errors.passwordConfirmation}}</small>
+          <div {{bindAttr class=":controls errors.password_confirmation:error"}}>
+            {{input type="password" value=password_confirmation placeholder="Confirm Password"}}
+            <small class="below">{{errors.password_confirmation}}</small>
           </div>
           <div class="controls">
             <button class="btn btn-primary" type="submit">Register</button>

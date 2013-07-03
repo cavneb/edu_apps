@@ -3,13 +3,12 @@ var Organization = require('../../models/organization');
 var SettingsOrganizationsController = Ember.ArrayController.extend({
 
   deleteMembership: function(membership) {
-    var ok = confirm("Are you sure you want to leave " + membership.get('organization.name') + "?");
+    var ok = confirm("Are you sure you want to leave " + membership.organization.name + "?");
     if (ok == true) {
       var self = this;
       var request = $.ajax({
         type: 'DELETE',
-        url: '/api/v1/memberships/' + membership.get('id'),
-        data: { access_token: $.cookie("token") }
+        url: '/api/v1/memberships/' + membership.id
       });
 
       request.done(function( msg ) {
